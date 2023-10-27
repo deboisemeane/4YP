@@ -4,7 +4,7 @@ import pandas as pd
 
 
 class ISRUCPreprocessor:
-    def __init__(self, params): #params = {patient, channel,
+    def __init__(self, params): #params = {patient, channel}
         self.params = params
         self.epoch, self.stage = self.load_hypnogram()
         self.hr = self.load_heart_rate()
@@ -64,4 +64,6 @@ class ISRUCPreprocessor:
 
         return
 
-    def select_freq_features(self): #
+    def select_freq_features(self):
+
+        return
