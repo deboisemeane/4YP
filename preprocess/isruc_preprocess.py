@@ -21,6 +21,7 @@ class ISRUCPreprocessor:
         self.lpf_epochs = self.lpf_epochs()
         self.freqs, self.fft_data = self.apply_hamming_fft()
         self.feature_freqs, self.features = self.select_freq_features()
+        self.avg_stage_power_fractions, self.power_fractions = self.get_power_fractions()
 
     def load_raw_eeg(self):  # Returns mne.Raw for chosen channel
         raw_eeg = mne.io.read_raw_edf(
@@ -126,10 +127,51 @@ class ISRUCPreprocessor:
             feature_freqs[i] = np.mean(freqs[start_idx:end_idx])
 
         # Normalise Features - energy of features in each epoch should sum to 1
-        epoch_energies = np.sum(binned_data ** 2, axis=0)  # Summing over features - energy for each epoch
+        epoch_energies = np.sum(binned_data ** 2, axis=2)  # Summing over features - energy for each epoch
+        epoch_energies = epoch_energies[:, :, np.newaxis]  # Add a new axis to make sure broadcasting works correctly.
         normalised_features = binned_data / np.sqrt(epoch_energies)
+        # print(np.sum(normalised_features ** 2, axis=2)) # Check that total energy of features in each epoch = 1
+
+        # Normalise FFT data by same amount
+        self.fft_data = self.fft_data / np.sqrt(epoch_energies)
 
         return feature_freqs, normalised_features
+
+    def get_power_fractions(self):  # Returns power fractions in clinical frequency bands
+        freqs, linearised_fft_data = self.freqs, self.fft_data
+        labels = self.lpf_epochs.metadata["Sleep Stage"]
+        # Epoch indices for corresponding stages N3 N2/N1 REM W
+        stage_idx = np.zeros((4, len(labels)))
+        for i in range(4):
+            stage_idx[i] = labels == i
+        # Frequency range indices for corresponding clinical bands
+        delta_idx = np.logical_and(np.greater_equal(freqs, 0.5), np.less(freqs, 4))
+        theta_idx = np.logical_and(np.greater_equal(freqs, 4), np.less(freqs, 8))
+        alpha_idx = np.logical_and(np.greater_equal(freqs, 8), np.less(freqs, 12))
+        beta_idx = np.logical_and(np.greater_equal(freqs, 12), np.less(freqs, 30))
+        # Power fractions for each window
+        # Delta, theta, alpha, beta
+        delta_fft = linearised_fft_data * delta_idx  # Shape (n_windows, n_channels, n_freqs), zeros outside the desired frequency range
+        theta_fft = linearised_fft_data * theta_idx
+        alpha_fft = linearised_fft_data * alpha_idx
+        beta_fft = linearised_fft_data * beta_idx
+
+        fft = np.squeeze(np.array([delta_fft, theta_fft, alpha_fft, beta_fft]))  # Shape (n_bands, n_epochs, n_freq)
+
+        powers = np.sum(fft * fft, axis=2)  # Total power for each window, shape (n_bands, n_epochs)
+
+        power_fractions = powers / np.sum(powers, axis=0)  # Power fractions for each window, shape (n_bands, n_epochs)
+
+        # Powers for each sleep stage, for each window
+        stage_powers = np.flip(np.expand_dims(powers, 1) * np.expand_dims(stage_idx, 0), axis=1)  # Shape (n_bands (4), n_stages (4), n_windows)
+        # axis0: bands delta->beta
+        # axis1: stages W->N3
+
+        # Average powers for each sleep stage
+        avg_stage_powers = np.average(stage_powers, axis=2)  # Averaged over windows corresponding to each sleep stage. Shape (n_bands, n_stages)
+        avg_stage_power_fractions = avg_stage_powers / np.sum(avg_stage_powers, axis=0)
+
+        return avg_stage_power_fractions, power_fractions
 
     def save_features_labels_csv(self):
 

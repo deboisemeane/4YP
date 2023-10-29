@@ -3,5 +3,4 @@ from preprocess import ISRUCPreprocessor
 import matplotlib.pyplot as plt
 
 preprocessor = ISRUCPreprocessor(patient=7)
-
-
+print(preprocessor.features.shape)
