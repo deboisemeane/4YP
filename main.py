@@ -1,6 +1,5 @@
-import numpy as np
 from preprocess import ISRUCPreprocessor
-import matplotlib.pyplot as plt
 
-preprocessor = ISRUCPreprocessor(patient=7)
-print(preprocessor.features.shape)
+for patient in range(1,11):
+    pre = ISRUCPreprocessor(patient=patient)
+    pre.save_features_labels_csv()

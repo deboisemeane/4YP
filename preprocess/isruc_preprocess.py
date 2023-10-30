@@ -133,7 +133,7 @@ class ISRUCPreprocessor:
         # print(np.sum(normalised_features ** 2, axis=2)) # Check that total energy of features in each epoch = 1
 
         # Normalise FFT data by same amount
-        self.fft_data = self.fft_data / np.sqrt(epoch_energies)
+        self.fft_data = self.fft_data / np.sqrt(epoch_energies) #SHOULD ONLY EVER BE CALLED ONCE
 
         return feature_freqs, normalised_features
 
@@ -173,6 +173,17 @@ class ISRUCPreprocessor:
 
         return avg_stage_power_fractions, power_fractions
 
-    def save_features_labels_csv(self):
-
+    def save_features_labels_csv(self):  # Saves features and labels (where experts agree) to csv.
+        # Find the examples that has a label (where experts agree) (Boolean Indexing)
+        label_bool_idx = np.logical_not(self.epochs.metadata["Sleep Stage"].isna())
+        # Select the features for the examples where the two experts agree, using boolean indexing.
+        selected_features = self.features[label_bool_idx, :, :]
+        # Select the labels for the same examples
+        selected_labels = np.array(self.epochs.metadata["Sleep Stage"])[label_bool_idx]
+        # Construct a dataframe containing the features and labels
+        dataframe_columns = [str(freq) for freq in self.feature_freqs] + ["Label"]
+        data = np.concatenate((np.squeeze(selected_features), np.expand_dims(selected_labels, 1)), axis=1)
+        df = pd.DataFrame(data, columns=dataframe_columns)
+        # Write the dataframe to csv
+        df.to_csv(f"data/Processed/ISRUC/Frequency_Features/patient_{self.params['patient']}.csv")
         return
