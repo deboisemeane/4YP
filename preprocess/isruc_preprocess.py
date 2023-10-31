@@ -181,7 +181,7 @@ class ISRUCPreprocessor:
         # Select the labels for the same examples
         selected_labels = np.array(self.epochs.metadata["Sleep Stage"])[label_bool_idx]
         # Construct a dataframe containing the features and labels
-        dataframe_columns = [str(freq) for freq in self.feature_freqs] + ["Label"]
+        dataframe_columns = [str(feature_no) for feature_no in range(1, 1 + self.params["n_features"])] + ["Label"]
         data = np.concatenate((np.squeeze(selected_features), np.expand_dims(selected_labels, 1)), axis=1)
         df = pd.DataFrame(data, columns=dataframe_columns)
         # Write the dataframe to csv
