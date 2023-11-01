@@ -23,7 +23,7 @@ model = MLP1()
 # Choose criterion and optimiser
 lr = 0.05
 weight_decay = 0  # L2 penalisation
-momentum = 0.1  # Relative weight placed on velocity / accumulated gradient
+momentum = 0.5  # Relative weight placed on velocity / accumulated gradient
 
 criterion = nn.CrossEntropyLoss()
 optimiser = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
@@ -34,7 +34,7 @@ VL = []
 
 
 # Training loop
-num_epochs = 20
+num_epochs = 15
 for epoch in range(num_epochs):  # Loops over the entire training set
     running_loss = 0
 
@@ -74,7 +74,7 @@ x = np.arange(start=1,stop=len(TL))
 fig, ax = plt.subplots(1, 1)
 ax.plot(TL, 'k', label='Training')
 ax.plot(VL, 'r', label='Validation')
-ax.set_title(f'Training and Validation Loss for 20-10-4 MLP (lr={lr})')
+ax.set_title(f'CrossEntropyLoss for MLP (lr={lr}, momentum={momentum})')
 ax.set_xlabel('Epoch')
 ax.set_ylabel('Cross Entropy Loss')
 ax.legend()
