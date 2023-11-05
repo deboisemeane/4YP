@@ -1,4 +1,4 @@
-
+import copy
 from src.datasets import ISRUCDataset
 from src.models import MLP1
 from utils import calculate_ce_loss
@@ -8,6 +8,7 @@ import torch.nn as nn
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
+
 # Define train, val, test sets.
 train_dataset = ISRUCDataset(patients=[1, 2, 3, 4, 5, 6, 7])
 val_dataset = ISRUCDataset(patients=[8, 9])
@@ -15,7 +16,7 @@ test_dataset = ISRUCDataset(patients=[10])
 
 train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_dataset, batch_size=32, shuffle=False)
-test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
+test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False)
 
 # Define the model as MLP 20-10-4 i.e. one hidden layer.
 model = MLP1()
@@ -32,6 +33,9 @@ optimiser = torch.optim.SGD(model.parameters(), lr=lr, momentum=momentum, weight
 TL = []
 VL = []
 
+# Initialise best_val_loss which we will use to save the best model state
+best_val_loss = 100000000000
+best_model_state = None
 
 # Training loop
 num_epochs = 15
@@ -44,9 +48,14 @@ for epoch in range(num_epochs):  # Loops over the entire training set
     TL.append(train_loss)
     VL.append(val_loss)
 
+    # Check if this is our best performing model so far
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        best_model_state = copy.deepcopy(model.state_dict())
+
     # Print the current average losses
     print(f"Epoch: [{epoch}/{num_epochs}], Average Training Loss: [{train_loss}]")
-    print(f"Epoch: [{epoch + 1}/{num_epochs}], Validation Loss: [{val_loss}], Validation Accuracy: [{val_accuracy}]")
+    print(f"Epoch: [{epoch}/{num_epochs}], Validation Loss: [{val_loss}], Validation Accuracy: [{val_accuracy}]")
 
     # Train for one epoch
     for i, batch in enumerate(train_loader):
@@ -79,3 +88,6 @@ ax.set_xlabel('Epoch')
 ax.set_ylabel('Cross Entropy Loss')
 ax.legend()
 plt.show()
+
+# Save the model state
+torch.save(best_model_state, "model_checkpoints/MLP1_save.pt")
