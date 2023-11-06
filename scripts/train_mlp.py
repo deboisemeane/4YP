@@ -29,8 +29,6 @@ class SGDConfig(OptimiserConfig):
 
 
 class TrainMLP:
-    # Attributes shared by all instances go outside any methods.
-    fig, ax = None, None
 
     def __init__(self, patients, optimiser_config, model=MLP1):
 
@@ -52,6 +50,8 @@ class TrainMLP:
         self.best_model_state = None  # Dict that can be loaded to get the model with the lowest validation loss
         self.VL = None  # Training loss after each epoch for the whole training process
         self.TL = None  # Validation loss after each epoch for the whole training process
+        self.confusion = None  # Confusion matrix for performance evaluation
+        self.metrics = None  # Accuracy metrics for performance evaluation
 
         # Initialise axes for plots (attributes shared by all instances of TrainMLP)
         if TrainMLP.fig is None or TrainMLP.ax is None:
@@ -66,7 +66,7 @@ class TrainMLP:
             raise ValueError("Unsupported optimiser configuration.")
         return optimiser
 
-    def train(self, n_epochs):
+    def train(self, n_epochs, print_losses=False):
 
         # Set criterion and optimiser
         criterion = nn.CrossEntropyLoss()
@@ -93,8 +93,9 @@ class TrainMLP:
                 self.best_model_state = copy.deepcopy(self.model.state_dict())
 
             # Print the current average losses
-            print(f"Epoch: [{epoch}/{n_epochs}], Average Training Loss: [{train_loss}]")
-            print(f"Epoch: [{epoch}/{n_epochs}], Validation Loss: [{val_loss}], Validation Accuracy: [{val_accuracy}]")
+            if print_losses is True:
+                print(f"Epoch: [{epoch}/{n_epochs}], Average Training Loss: [{train_loss}]")
+                print(f"Epoch: [{epoch}/{n_epochs}], Validation Loss: [{val_loss}], Validation Accuracy: [{val_accuracy}]")
 
             # Train for one epoch
             for i, batch in enumerate(self.train_loader):
@@ -114,11 +115,10 @@ class TrainMLP:
         self.VL = VL
         self.TL = TL
 
-    def plot_loss(self, val_colour='r', train_colour='k'):
+    def plot_loss(self, ax, t_colour='k', v_colour='r'):
         # Plot Training and Validation Loss
-        fig, ax = self.fig, self.ax
-        ax.plot(self.TL, color=train_colour, label='Training')
-        ax.plot(self.VL, color=val_colour, label='Validation')
+        ax.plot(self.TL, color=t_colour, label=f'Training, {self.optimiser, self.optimiser_config.params}')
+        ax.plot(self.VL, color=v_colour, label=f'Validation, {self.optimiser, self.optimiser_config.params}')
         ax.set_title(f'CrossEntropyLoss for MLP ({self.optimiser_config.params})', fontsize=7)
         ax.set_xlabel('Epoch')
         ax.set_ylabel('Cross Entropy Loss')
@@ -130,12 +130,14 @@ class TrainMLP:
         torch.save(self.best_model_state, f"model_checkpoints/{name}")
 
     # Evaluates a confusion matrix on the test dataset for the best model achieved
-    def evaluate_accuracy(self):
+    def evaluate_accuracy(self, dataloader=self.test_loader):
         # Load the best model parameters
         self.model.load_state_dict(self.best_model_state)
         # Calculate the confusion matrix
-        confusion = confusion_matrix(self.model, self.test_loader)
+        confusion = confusion_matrix(self.model, dataloader)
+        self.confusion = confusion
         metrics = accuracy_metrics(confusion)
+        self.metrics = metrics
         print(f"Confusion matrix: \n{confusion}")
         print(f"Accuracy: {metrics['ACC']}")
         print(f"Sensitivity: {metrics['TPR']}")
