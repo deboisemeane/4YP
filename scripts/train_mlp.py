@@ -31,6 +31,7 @@ class SGDConfig(OptimiserConfig):
 class TrainMLP:
 
     def __init__(self, patients, optimiser_config, model=MLP1):
+        self.patients = patients
 
         # Define train, val, test sets.
         self.train_dataset = ISRUCDataset(patients=patients["train"])
@@ -53,9 +54,6 @@ class TrainMLP:
         self.confusion = None  # Confusion matrix for performance evaluation
         self.metrics = None  # Accuracy metrics for performance evaluation
 
-        # Initialise axes for plots (attributes shared by all instances of TrainMLP)
-        if TrainMLP.fig is None or TrainMLP.ax is None:
-            TrainMLP.fig, self.ax = plt.subplots(1, 1)
 
     def create_optimiser(self, config):
         if isinstance(config, SGDConfig):
@@ -66,7 +64,7 @@ class TrainMLP:
             raise ValueError("Unsupported optimiser configuration.")
         return optimiser
 
-    def train(self, n_epochs, print_losses=False):
+    def train(self, n_epochs, print_losses=True):
 
         # Set criterion and optimiser
         criterion = nn.CrossEntropyLoss()
@@ -117,24 +115,24 @@ class TrainMLP:
 
     def plot_loss(self, ax, t_colour='k', v_colour='r'):
         # Plot Training and Validation Loss
-        ax.plot(self.TL, color=t_colour, label=f'Training, {self.optimiser, self.optimiser_config.params}')
-        ax.plot(self.VL, color=v_colour, label=f'Validation, {self.optimiser, self.optimiser_config.params}')
+        ax.plot(self.TL, color=t_colour, label=f'Training, {self.optimiser.__class__.__name__, self.optimiser_config.params}')
+        ax.plot(self.VL, color=v_colour, label=f'Validation, {self.optimiser.__class__.__name__, self.optimiser_config.params}')
         ax.set_title(f'CrossEntropyLoss for MLP ({self.optimiser_config.params})', fontsize=7)
         ax.set_xlabel('Epoch')
         ax.set_ylabel('Cross Entropy Loss')
         ax.legend()
-        plt.show()
+
 
     def save_best_model(self, name="MLP1_save.pt"):
         # Save the model state
         torch.save(self.best_model_state, f"model_checkpoints/{name}")
 
     # Evaluates a confusion matrix on the test dataset for the best model achieved
-    def evaluate_accuracy(self, dataloader=self.test_loader):
+    def evaluate_accuracy(self):
         # Load the best model parameters
         self.model.load_state_dict(self.best_model_state)
         # Calculate the confusion matrix
-        confusion = confusion_matrix(self.model, dataloader)
+        confusion = confusion_matrix(self.model, self.test_loader)
         self.confusion = confusion
         metrics = accuracy_metrics(confusion)
         self.metrics = metrics
