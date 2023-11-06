@@ -1,7 +1,7 @@
 import copy
 from src.datasets import ISRUCDataset
 from src.models import MLP1
-from utils import calculate_ce_loss, confusion_matrix
+from utils import calculate_ce_loss, confusion_matrix, accuracy_metrics
 import numpy as np
 import torch
 import torch.nn as nn
@@ -53,13 +53,14 @@ class TrainMLP:
         self.VL = None  # Training loss after each epoch for the whole training process
         self.TL = None  # Validation loss after each epoch for the whole training process
 
-        # Initialise axes for plots
-        self.fig, self.ax = plt.subplots(1, 1)
+        # Initialise axes for plots (attributes shared by all instances of TrainMLP)
+        if TrainMLP.fig is None or TrainMLP.ax is None:
+            TrainMLP.fig, self.ax = plt.subplots(1, 1)
 
     def create_optimiser(self, config):
         if isinstance(config, SGDConfig):
             optimiser = torch.optim.SGD(self.model.parameters(), **config.params)
-        if isinstance(config, AdamConfig):
+        elif isinstance(config, AdamConfig):
             optimiser = torch.optim.Adam(self.model.parameters(), **config.params)
         else:
             raise ValueError("Unsupported optimiser configuration.")
@@ -118,7 +119,7 @@ class TrainMLP:
         fig, ax = self.fig, self.ax
         ax.plot(self.TL, color=train_colour, label='Training')
         ax.plot(self.VL, color=val_colour, label='Validation')
-        ax.set_title(f'CrossEntropyLoss for MLP ({self.optimiser_config.params})')
+        ax.set_title(f'CrossEntropyLoss for MLP ({self.optimiser_config.params})', fontsize=7)
         ax.set_xlabel('Epoch')
         ax.set_ylabel('Cross Entropy Loss')
         ax.legend()
@@ -129,11 +130,13 @@ class TrainMLP:
         torch.save(self.best_model_state, f"model_checkpoints/{name}")
 
     # Evaluates a confusion matrix on the test dataset for the best model achieved
-    def evaluate_scores(self):
+    def evaluate_accuracy(self):
         # Load the best model parameters
         self.model.load_state_dict(self.best_model_state)
         # Calculate the confusion matrix
         confusion = confusion_matrix(self.model, self.test_loader)
+        metrics = accuracy_metrics(confusion)
         print(f"Confusion matrix: \n{confusion}")
-        print(f"Accuracy: {np.trace(confusion) / np.sum(confusion)}")
-
+        print(f"Accuracy: {metrics['ACC']}")
+        print(f"Sensitivity: {metrics['TPR']}")
+        print(f"Specificity: {metrics['TNR']}")
