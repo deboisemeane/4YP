@@ -1,21 +1,18 @@
 from datasets import ISRUCDataset
 from utils import confusion_matrix
+from scripts import TrainMLP
 from src.models import MLP1
+
 import torch
 from torch.utils.data import DataLoader
 import numpy as np
 
-test_dataset = ISRUCDataset([10])
 
-model_state = torch.load("model_checkpoints/MLP1_save.pt")
-model = MLP1()
-model.load_state_dict(model_state)
-model.eval()
-
-dataloader = DataLoader(test_dataset, batch_size=32)
-
-confusion = confusion_matrix(model, dataloader)
-accuracy = np.trace(confusion) / np.sum(confusion)
-
-print(confusion)
-print(f"Accuracy: {accuracy}")
+patients = {"train": [1, 2, 3, 4, 5, 6, 7],
+            "val":   [8, 9],
+            "test":  [10]}
+mlp_trainer = TrainMLP(patients=patients)
+mlp_trainer.train()
+mlp_trainer.save_best_model()
+mlp_trainer.evaluate_scores()
+mlp_trainer.plot_loss()

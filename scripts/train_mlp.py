@@ -9,28 +9,46 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 
 
+# Classes used to configure parameters for optimiser instantiation within the TrainMLP class.
+class OptimiserConfig:
+    def __init__(self, **kwargs):
+        self.params = kwargs
+        # **kwargs allows us to specify as many hyperparameters as we want.
+
+
+class AdamConfig(OptimiserConfig):
+    def __init__(self, lr=0.001, betas=(0.9, 0.999), **kwargs):
+        super().__init__(lr=lr, betas=betas, **kwargs)
+        # **kwargs allows us to specify as many hyperparameters as we want.
+
+
+class SGDConfig(OptimiserConfig):
+    def __init__(self, lr=0.05, momentum=0.1, weight_decay=0, **kwargs):
+        super().__init__(lr=lr, momentum=momentum, weight_decay=weight_decay, **kwargs)
+        # **kwargs allows us to specify as many hyperparameters as we want.
+
+
 class TrainMLP:
-    def __init__(self,  hyperparameters, patients, model=MLP1, optim=torch.optim.SGD,):
-        default_hyperparameters = {"lr": 0.05,          # Currently these are for the SGD optimiser
-                                   "weight_decay": 0,  # L2 penalisation
-                                   "momentum": 0.1,
-                                   "n_epochs": 15}
-        self.hyperparameters = default_hyperparameters.update(hyperparameters)
+    # Attributes shared by all instances go outside any methods.
+    fig, ax = None, None
+
+    def __init__(self, patients, optimiser_config, model=MLP1):
 
         # Define train, val, test sets.
-        self.train_dataset = ISRUCDataset(patients=[1, 2, 3, 4, 5, 6, 7])
-        self.val_dataset = ISRUCDataset(patients=[8, 9])
-        self.test_dataset = ISRUCDataset(patients=[10])
+        self.train_dataset = ISRUCDataset(patients=patients["train"])
+        self.val_dataset = ISRUCDataset(patients=patients["val"])
+        self.test_dataset = ISRUCDataset(patients=patients["test"])
 
         self.train_loader = DataLoader(self.train_dataset, batch_size=32, shuffle=True)
         self.val_loader = DataLoader(self.val_dataset, batch_size=32, shuffle=False)
         self.test_loader = DataLoader(self.test_dataset, batch_size=32, shuffle=False)
 
-        # Define the model as MLP 20-10-4 i.e. one hidden layer, and other attributes of the training algorithm.
+        # Instantiate the model and optimiser.
+        self.optimiser_config = optimiser_config
         self.model = model()
-        self.optim = optim
+        self.optimiser = self.create_optimiser(optimiser_config)
 
-        # Initialise other attributes
+        # Initialise other attributes.
         self.best_model_state = None  # Dict that can be loaded to get the model with the lowest validation loss
         self.VL = None  # Training loss after each epoch for the whole training process
         self.TL = None  # Validation loss after each epoch for the whole training process
@@ -38,16 +56,20 @@ class TrainMLP:
         # Initialise axes for plots
         self.fig, self.ax = plt.subplots(1, 1)
 
-    def train(self):
+    def create_optimiser(self, config):
+        if isinstance(config, SGDConfig):
+            optimiser = torch.optim.SGD(self.model.parameters(), **config.params)
+        if isinstance(config, AdamConfig):
+            optimiser = torch.optim.Adam(self.model.parameters(), **config.params)
+        else:
+            raise ValueError("Unsupported optimiser configuration.")
+        return optimiser
 
-        # Choose criterion and optimiser
-        lr = self.hyperparameters["lr"]
-        weight_decay = self.hyperparameters["weight_decay"]  # L2 penalisation
-        momentum = self.hyperparameters["momentum"]  # Relative weight placed on velocity / accumulated gradient
-        n_epochs = self.hyperparameters["n_epochs"]
+    def train(self, n_epochs):
 
+        # Set criterion and optimiser
         criterion = nn.CrossEntropyLoss()
-        optimiser = torch.optim.SGD(self.model.parameters(), lr=lr, momentum=momentum, weight_decay=weight_decay)
+        optimiser = self.optimiser
 
         # Initialise lists for plotting loss
         TL = []
@@ -94,18 +116,17 @@ class TrainMLP:
     def plot_loss(self, val_colour='r', train_colour='k'):
         # Plot Training and Validation Loss
         fig, ax = self.fig, self.ax
-        ax.plot(self.TL, colour=train_colour, label='Training')
-        ax.plot(self.VL, colour=val_colour, label='Validation')
-        ax.set_title(f'CrossEntropyLoss for MLP (lr={self.hyperparameters["lr"]}, '
-                     f'momentum={self.hyperparameters["momentum"]})')
+        ax.plot(self.TL, color=train_colour, label='Training')
+        ax.plot(self.VL, color=val_colour, label='Validation')
+        ax.set_title(f'CrossEntropyLoss for MLP ({self.optimiser_config.params})')
         ax.set_xlabel('Epoch')
         ax.set_ylabel('Cross Entropy Loss')
         ax.legend()
         plt.show()
 
-    def save_best_model(self, path="model_checkpoints/MLP1_save.pt"):
+    def save_best_model(self, name="MLP1_save.pt"):
         # Save the model state
-        torch.save(self.best_model_state, path)
+        torch.save(self.best_model_state, f"model_checkpoints/{name}")
 
     # Evaluates a confusion matrix on the test dataset for the best model achieved
     def evaluate_scores(self):
@@ -113,6 +134,6 @@ class TrainMLP:
         self.model.load_state_dict(self.best_model_state)
         # Calculate the confusion matrix
         confusion = confusion_matrix(self.model, self.test_loader)
-        print(f"Confusion matrix: {confusion}")
+        print(f"Confusion matrix: \n{confusion}")
         print(f"Accuracy: {np.trace(confusion) / np.sum(confusion)}")
 

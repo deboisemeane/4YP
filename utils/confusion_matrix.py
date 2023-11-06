@@ -3,6 +3,7 @@ import numpy as np
 
 
 def confusion_matrix(model, dataloader):   # 4 Class confusion matrix
+    model.eval()
     with torch.no_grad():
         confusion = np.zeros((4, 4))
         for i, batch in enumerate(dataloader):

@@ -1,4 +1,4 @@
-import numpy as np
+from pathlib import Path
 import pandas as pd
 import torch
 import torch.utils.data as d
@@ -8,8 +8,9 @@ class ISRUCDataset(d.Dataset):    # This class is instantiated to select frequen
 
     def __init__(self, patients):
         data = []
+        root_path = Path(__file__).parent.parent.parent
         for patient in patients:       # Patients are a list of patients which we want to include in this custom dataset.
-            patient_data = pd.read_csv(f"data/Processed/ISRUC/Frequency_Features/patient_{patient}.csv")
+            patient_data = pd.read_csv(root_path / f"data/Processed/ISRUC/Frequency_Features/patient_{patient}.csv")
             # Stick together dataframes of features for the selected patients
             data.append(patient_data)
         self.data = pd.concat(data, axis=0)
