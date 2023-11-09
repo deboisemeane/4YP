@@ -25,8 +25,8 @@ class ISRUCDataset(d.Dataset):    # This class is instantiated to select frequen
         df = self.data
         for stage, factor in self.resample_factors.items():
             if factor > 1:
-                stage_data = df[df.iloc[:, 20] == stage]
-                num_samples_to_add = len(stage_data) * factor - len(stage_data)
+                stage_data = df[df.iloc[:, 21] == float(stage)]
+                num_samples_to_add = int(len(stage_data) * (factor - 1))
                 # Take some random samples of those corresponding to the current stage.
                 resamples = stage_data.sample(num_samples_to_add, replace=True)
                 df = pd.concat([df, resamples], axis=0)
