@@ -137,7 +137,7 @@ class TrainMLP:
 
     def save_best_model(self):
         # Save the model state
-        torch.save(self.best_model_state, f"model_checkpoints/{self.model.__class__.__name__}")
+        torch.save(self.best_model_state, f"model_checkpoints/{self.model.__class__.__name__}.pt")
 
     # Evaluates a confusion matrix on the test dataset for the best model achieved
     def evaluate_accuracy(self):
