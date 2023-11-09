@@ -1,7 +1,7 @@
 import numpy as np
 
 
-# Calculates accuracy metrics from a confusion matrix
+# Calculates accuracy metrics from a confusion matrix (rows: Actual, columns: Predicted)
 def accuracy_metrics(confusion_matrix):
     FP = confusion_matrix.sum(axis=0) - np.diag(confusion_matrix)
     FN = confusion_matrix.sum(axis=1) - np.diag(confusion_matrix)

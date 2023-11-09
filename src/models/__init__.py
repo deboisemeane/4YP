@@ -1,1 +1,1 @@
-from .MLP_1 import MLP1
+from .MLP import MLP1, MLP2

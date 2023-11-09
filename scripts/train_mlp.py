@@ -28,6 +28,19 @@ class SGDConfig(OptimiserConfig):
         # **kwargs allows us to specify as many hyperparameters as we want.
 
 
+class DataConfig:
+    def __init__(self, **kwargs):
+        self.params = kwargs
+
+
+class ISRUCConfig(DataConfig):
+    def __init__(self, patients, resample, **kwargs):
+        super().__init__(patients=patients, resample=resample, **kwargs)
+        # patients : dict containing ISRUC patient numbers for "train", "val", "test" datasets.
+        # resample : dict containing resample factors for each class "N3", "N1/N2", "REM", "W"
+            # !!Resampling will only apply to the training dataset!!
+
+
 class TrainMLP:
 
     def __init__(self, patients, optimiser_config, model=MLP1):
@@ -53,7 +66,6 @@ class TrainMLP:
         self.TL = None  # Validation loss after each epoch for the whole training process
         self.confusion = None  # Confusion matrix for performance evaluation
         self.metrics = None  # Accuracy metrics for performance evaluation
-
 
     def create_optimiser(self, config):
         if isinstance(config, SGDConfig):
@@ -113,19 +125,17 @@ class TrainMLP:
         self.VL = VL
         self.TL = TL
 
-    def plot_loss(self, ax, t_colour='k', v_colour='r'):
+    def plot_loss(self, ax, labels, t_colour='k', v_colour='r'):
         # Plot Training and Validation Loss
-        ax.plot(self.TL, color=t_colour, label=f'Training, {self.optimiser.__class__.__name__, self.optimiser_config.params}')
-        ax.plot(self.VL, color=v_colour, label=f'Validation, {self.optimiser.__class__.__name__, self.optimiser_config.params}')
-        ax.set_title(f'CrossEntropyLoss for MLP ({self.optimiser_config.params})', fontsize=7)
+        ax.plot(self.TL, color=t_colour, linestyle='-', label=labels["t"])
+        ax.plot(self.VL, color=v_colour, linestyle='--', label=labels["v"])
         ax.set_xlabel('Epoch')
         ax.set_ylabel('Cross Entropy Loss')
-        ax.legend()
+        ax.legend(fontsize=8, loc='upper right')
 
-
-    def save_best_model(self, name="MLP1_save.pt"):
+    def save_best_model(self):
         # Save the model state
-        torch.save(self.best_model_state, f"model_checkpoints/{name}")
+        torch.save(self.best_model_state, f"model_checkpoints/{self.model.__class__.__name__}")
 
     # Evaluates a confusion matrix on the test dataset for the best model achieved
     def evaluate_accuracy(self):
@@ -137,6 +147,4 @@ class TrainMLP:
         metrics = accuracy_metrics(confusion)
         self.metrics = metrics
         print(f"Confusion matrix: \n{confusion}")
-        print(f"Accuracy: {metrics['ACC']}")
-        print(f"Sensitivity: {metrics['TPR']}")
-        print(f"Specificity: {metrics['TNR']}")
+        print(f"Accuracy metrics: \n{metrics}")
