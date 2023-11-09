@@ -6,7 +6,8 @@ import torch.utils.data as d
 
 class ISRUCDataset(d.Dataset):    # This class is instantiated to select frequency feature data for chosen patients
 
-    def __init__(self, patients):
+    def __init__(self, patients, resample=None):
+
         data = []
         root_path = Path(__file__).parent.parent.parent
         for patient in patients:       # Patients are a list of patients which we want to include in this custom dataset.
@@ -15,23 +16,37 @@ class ISRUCDataset(d.Dataset):    # This class is instantiated to select frequen
             data.append(patient_data)
         self.data = pd.concat(data, axis=0)
 
+        self.resample_factors = resample
+        if resample is not None:
+            self.resample()
+
+    # Resample the classes by chosen factors
+    def resample(self):
+        df = self.data
+        for stage, factor in self.resample_factors.items():
+            if factor > 1:
+                stage_data = df[df.iloc[:, 20] == stage]
+                num_samples_to_add = len(stage_data) * factor - len(stage_data)
+                # Take some random samples of those corresponding to the current stage.
+                resamples = stage_data.sample(num_samples_to_add, replace=True)
+                df = pd.concat([df, resamples], axis=0)
+            else:
+                raise ValueError("Resample factor should be > 1.")
+        self.data = df
+
     def __getitem__(self, idx):  # We have to overwrite the torch.utils.data.Datasets.__getitem__() method
 
         # Get column titles for the features (excludes labels)
-        feature_columns = self.data.columns[1:-1]  # Excludes first column which is unnamed and contains indexes.
-        features = self.data.iloc[idx][feature_columns]
+        feature_columns = self.data.columns[1:-1]  # Excludes first column which is unnamed and contains indeces.
+        features = self.data.iloc[idx, self.data.columns.get_loc(feature_columns[0]):self.data.columns.get_loc(feature_columns[-1]) + 1]
 
         # Get column title for the labels
         label_column = self.data.columns[-1]
-        label = self.data.iloc[idx][label_column]
-
-        # Use one-hot encoding - DON'T BECAUSE torch.nn.CrossEntropyLoss EXPECTS CLASS INDICES IN {0,...,C}
-        #label_one_hot = np.zeros(4)
-        #label_one_hot[int(label)] = 1    # N3:[1,0,0,0] N2/N1:[0,1,0,0] REM:[0,0,1,0] W:[0,0,0,1]
+        label = self.data.iloc[idx, self.data.columns.get_loc(label_column)]
 
         # Convert to tensors
         label = torch.tensor(label, dtype=torch.long)   # CrossEntropyLoss expects integer type
-        features = torch.tensor(features, dtype=torch.float32)
+        features = torch.tensor(features.values, dtype=torch.float32)
 
         return {"features": features,
                 "label": label}

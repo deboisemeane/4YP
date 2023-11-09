@@ -37,19 +37,21 @@ class ISRUCConfig(DataConfig):
     def __init__(self, patients, resample, **kwargs):
         super().__init__(patients=patients, resample=resample, **kwargs)
         # patients : dict containing ISRUC patient numbers for "train", "val", "test" datasets.
-        # resample : dict containing resample factors for each class "N3", "N1/N2", "REM", "W"
+        # resample : dict containing resample factors for each class "0", "1", "2", "3"
             # !!Resampling will only apply to the training dataset!!
 
 
 class TrainMLP:
 
-    def __init__(self, patients, optimiser_config, model=MLP1):
-        self.patients = patients
+    def __init__(self, data_config, optimiser_config, model=MLP1):
+        self.data_config = data_config
+        self.patients = data_config.params["patients"]
+        self.resample = data_config.params["resample"]
 
         # Define train, val, test sets.
-        self.train_dataset = ISRUCDataset(patients=patients["train"])
-        self.val_dataset = ISRUCDataset(patients=patients["val"])
-        self.test_dataset = ISRUCDataset(patients=patients["test"])
+        self.train_dataset = ISRUCDataset(patients=self.patients["train"], resample=self.resample)
+        self.val_dataset = ISRUCDataset(patients=self.patients["val"])
+        self.test_dataset = ISRUCDataset(patients=self.patients["test"])
 
         self.train_loader = DataLoader(self.train_dataset, batch_size=32, shuffle=True)
         self.val_loader = DataLoader(self.val_dataset, batch_size=32, shuffle=False)
