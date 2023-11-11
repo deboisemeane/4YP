@@ -28,6 +28,8 @@ class SGDConfig(OptimiserConfig):
         # **kwargs allows us to specify as many hyperparameters as we want.
 
 
+# DataConfig class contains the parameters required to instantiate a custom dataset.
+# Pass as argument to a trainer.
 class DataConfig:
     def __init__(self, **kwargs):
         self.params = kwargs
@@ -43,7 +45,7 @@ class ISRUCConfig(DataConfig):
 
 class TrainMLP:
 
-    def __init__(self, data_config, optimiser_config, model=MLP1):
+    def __init__(self, data_config: DataConfig, optimiser_config: OptimiserConfig, model=MLP1):
         self.data_config = data_config
         self.patients = data_config.params["patients"]
         self.resample = data_config.params["resample"]
@@ -60,7 +62,7 @@ class TrainMLP:
         # Instantiate the model and optimiser.
         self.optimiser_config = optimiser_config
         self.model = model()
-        self.optimiser = self.create_optimiser(optimiser_config)
+        self.optimiser = self.__create_optimiser__(optimiser_config)
 
         # Initialise other attributes.
         self.best_model_state = None  # Dict that can be loaded to get the model with the lowest validation loss
@@ -69,7 +71,7 @@ class TrainMLP:
         self.confusion = None  # Confusion matrix for performance evaluation
         self.metrics = None  # Accuracy metrics for performance evaluation
 
-    def create_optimiser(self, config):
+    def __create_optimiser__(self, config):
         if isinstance(config, SGDConfig):
             optimiser = torch.optim.SGD(self.model.parameters(), **config.params)
         elif isinstance(config, AdamConfig):
@@ -140,13 +142,13 @@ class TrainMLP:
         torch.save(self.best_model_state, f"model_checkpoints/{self.model.__class__.__name__}.pt")
 
     # Evaluates a confusion matrix on the test dataset for the best model achieved
-    def evaluate_accuracy(self):
+    def test(self):
         # Load the best model parameters
         self.model.load_state_dict(self.best_model_state)
         # Calculate the confusion matrix
         confusion = confusion_matrix(self.model, self.test_loader)
-        self.confusion = confusion
         metrics = accuracy_metrics(confusion)
+        self.confusion = confusion
         self.metrics = metrics
         print(f"Confusion matrix: \n{confusion}")
         print(f"Accuracy metrics: \n{metrics}")
