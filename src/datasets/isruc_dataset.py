@@ -20,7 +20,8 @@ class ISRUCDataset(d.Dataset):    # This class is instantiated to select frequen
         if resample is not None:
             self.resample()
 
-    # Resample the classes by chosen factors
+    # Appends resampled data to the dataset.
+    # Resample factors should be specified in a dictionary {"label": factor}
     def resample(self):
         df = self.data
         for stage, factor in self.resample_factors.items():
