@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 
 
+# This class is used to process raw ISRUC data for one patient.
 class ISRUCPreprocessor:
     def __init__(self, **params):  # ** Allows us to specify any number of the parameters, which are collected to dict
 
