@@ -2,7 +2,7 @@ from pathlib import Path
 import pandas as pd
 import torch
 import torch.utils.data as d
-from datasets import BaseDataset_f
+from src.datasets import BaseDataset_f
 
 
 class ISRUCDataset(BaseDataset_f):    # This class is instantiated to select frequency feature data for chosen patients

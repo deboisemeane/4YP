@@ -1,6 +1,6 @@
 from pathlib import Path
 import pandas as pd
-from datasets import BaseDataset_f
+from src.datasets import BaseDataset_f
 
 
 # Custom dataset for handcrafted frequency features.
