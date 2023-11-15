@@ -1,12 +1,16 @@
 import copy
-from src.datasets import ISRUCDataset
+from src.datasets import ISRUCDataset, SHHSDataset_f
 from src.models import MLP1
 from utils import calculate_ce_loss, confusion_matrix, accuracy_metrics
 import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
-import matplotlib.pyplot as plt
+
+import os
+from pathlib import Path
+import pathlib
+import random
 
 
 # Classes used to configure parameters for optimiser instantiation within the TrainMLP class.
@@ -41,26 +45,67 @@ class ISRUCConfig(DataConfig):
         # patients : dict containing ISRUC patient numbers for "train", "val", "test" datasets.
         # resample : dict containing resample factors for each class "0", "1", "2", "3"
             # !!Resampling will only apply to the training dataset!!
-class SHHSConfig(DataConfig):
-    def __init__(selfself, split: dict, resample: dict, **kwargs):
+
+
+class SHHSConfig_f(DataConfig):  # This config class is for frequency feature SHHS datasets.
+    def __init__(self, split: dict, resample: dict, **kwargs):
         super().__init__(split=split, resample=resample, **kwargs)
+        root_dir = Path(__file__).parent.parent
+        data_dir = root_dir / "data/Processed/shhs/Frequency_Features/"
+
+        # Read all CSV filenames and extract nsrrids
+        all_filenames = os.listdir(data_dir)
+        all_nsrrids = [filename.split('.')[0][7::] for filename in all_filenames]
+
+        # Shuffle the list of nsrrids
+        random.shuffle(all_nsrrids)
+
+        # Calculate split sizes
+        n_train = split["train"]
+        n_val = split["val"]
+        n_test = split["test"]
+        total = n_train + n_val + n_test
+
+        # Check if the total number required exceeds the available number
+        if total > len(all_nsrrids):
+            raise ValueError("Requested total split size exceeds the number of available nsrrids")
+
+        # Select subsets for each dataset
+        train_nsrrids = all_nsrrids[:n_train]
+        val_nsrrids = all_nsrrids[n_train:n_train + n_val]
+        test_nsrrids = all_nsrrids[n_train + n_val:total]
+
+        # Store the splits
+        self.patients = {
+            "train": train_nsrrids,
+            "val": val_nsrrids,
+            "test": test_nsrrids
+        }
+
 
 class TrainMLP:
 
     def __init__(self, data_config: DataConfig, optimiser_config: OptimiserConfig, model=MLP1):
+        # Get dataset parameters from data_config
         self.data_config = data_config
         self.patients = data_config.params["patients"]
         self.resample = data_config.params["resample"]
 
-        # Define train, val, test sets.
-        self.train_dataset = ISRUCDataset(patients=self.patients["train"], resample=self.resample)
-        self.val_dataset = ISRUCDataset(patients=self.patients["val"])
-        self.test_dataset = ISRUCDataset(patients=self.patients["test"])
+        # Define train, val, test datasets.
+        if data_config is ISRUCConfig:
+            self.train_dataset = ISRUCDataset(patients=self.patients["train"], resample=self.resample)
+            self.val_dataset = ISRUCDataset(patients=self.patients["val"])
+            self.test_dataset = ISRUCDataset(patients=self.patients["test"])
 
+        elif data_config is SHHSConfig_f:
+            self.train_dataset = SHHSDataset_f(nsrrids=self.patients["train"], resample=self.resample)
+            self.val_dataset = SHHSDataset_f(nsrrids=self.patients["val"])
+            self.test_dataset = SHHSDataset_f(nsrrids=self.patients["test"])
+
+        # Create DataLoaders
         self.train_loader = DataLoader(self.train_dataset, batch_size=32, shuffle=True)
         self.val_loader = DataLoader(self.val_dataset, batch_size=32, shuffle=False)
         self.test_loader = DataLoader(self.test_dataset, batch_size=32, shuffle=False)
-
         # Instantiate the model and optimiser.
         self.optimiser_config = optimiser_config
         self.model = model()

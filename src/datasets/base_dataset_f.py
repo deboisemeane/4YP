@@ -9,7 +9,6 @@ class BaseDataset_f(d.Dataset):
     resample_factors: dict[str:float]
     data: pd.DataFrame
 
-    # Append resampled data to the dataset.
     # Resample factors should be specified in a dictionary {"label": factor}
     def resample(self):
         df = self.data
