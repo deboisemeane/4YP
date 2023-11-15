@@ -41,7 +41,9 @@ class ISRUCConfig(DataConfig):
         # patients : dict containing ISRUC patient numbers for "train", "val", "test" datasets.
         # resample : dict containing resample factors for each class "0", "1", "2", "3"
             # !!Resampling will only apply to the training dataset!!
-
+class SHHSConfig(DataConfig):
+    def __init__(selfself, split: dict, resample: dict, **kwargs):
+        super().__init__(split=split, resample=resample, **kwargs)
 
 class TrainMLP:
 

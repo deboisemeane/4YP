@@ -5,4 +5,6 @@ import torch.utils.data as d
 
 
 # Custom dataset for handcrafted frequency features.
-class SHHSDataset_f:
+class SHHSDataset_f(d.Dataset):
+
+
