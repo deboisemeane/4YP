@@ -93,12 +93,12 @@ class TrainMLP:
         self.resample = data_config.params["resample"]
 
         # Define train, val, test datasets.
-        if data_config is ISRUCConfig:
+        if isinstance(data_config, ISRUCConfig):
             self.train_dataset = ISRUCDataset(patients=self.patients["train"], resample=self.resample)
             self.val_dataset = ISRUCDataset(patients=self.patients["val"])
             self.test_dataset = ISRUCDataset(patients=self.patients["test"])
 
-        elif data_config is SHHSConfig_f:
+        elif isinstance(data_config, SHHSConfig_f):
             self.train_dataset = SHHSDataset_f(nsrrids=self.patients["train"], resample=self.resample)
             self.val_dataset = SHHSDataset_f(nsrrids=self.patients["val"])
             self.test_dataset = SHHSDataset_f(nsrrids=self.patients["test"])
