@@ -40,7 +40,7 @@ class DataConfig:
 
 
 class ISRUCConfig(DataConfig):
-    def __init__(self, patients, resample, **kwargs):
+    def __init__(self, patients, resample=None, **kwargs):
         super().__init__(patients=patients, resample=resample, **kwargs)
         # patients : dict containing ISRUC patient numbers for "train", "val", "test" datasets.
         # resample : dict containing resample factors for each class "0", "1", "2", "3"
@@ -48,7 +48,7 @@ class ISRUCConfig(DataConfig):
 
 
 class SHHSConfig_f(DataConfig):  # This config class is for frequency feature SHHS datasets.
-    def __init__(self, split: dict, resample: dict, **kwargs):
+    def __init__(self, split: dict, resample: dict = None, **kwargs):
         super().__init__(split=split, resample=resample, **kwargs)
         root_dir = Path(__file__).parent.parent
         data_dir = root_dir / "data/Processed/shhs/Frequency_Features/"
