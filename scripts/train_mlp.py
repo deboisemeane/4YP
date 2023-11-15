@@ -49,7 +49,7 @@ class ISRUCConfig(DataConfig):
 
 class SHHSConfig_f(DataConfig):  # This config class is for frequency feature SHHS datasets.
     def __init__(self, split: dict, resample: dict = None, **kwargs):
-        super().__init__(split=split, resample=resample, **kwargs)
+        super().__init__(resample=resample, **kwargs)
         root_dir = Path(__file__).parent.parent
         data_dir = root_dir / "data/Processed/shhs/Frequency_Features/"
 
@@ -81,6 +81,7 @@ class SHHSConfig_f(DataConfig):  # This config class is for frequency feature SH
             "val": val_nsrrids,
             "test": test_nsrrids
         }
+        self.params.update({"patients": self.patients})
 
 
 class TrainMLP:
