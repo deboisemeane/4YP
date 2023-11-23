@@ -8,4 +8,6 @@ The aim of this project is to explore the potential for automated sleep stage cl
 
 BUILD STATUS 17/11/2023
 The project currently allows for training and testing of multi-layer perceptron models on hand-crafted frequency features from the ISRUC and SHHS-1 datasets.
-
+Future additions:
+    - CNNs to learn features from time-series EEG data.
+    - Data obtained from wearables to make predictions.

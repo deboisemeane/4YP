@@ -3,7 +3,7 @@ import os
 import numpy as np
 import pandas as pd
 import xml.etree.ElementTree as ET
-import gc
+from pathlib import Path
 
 
 # This class is used to process raw SHHS-1 data for all (selected) participants.
@@ -21,6 +21,7 @@ class SHHSPreprocessor:
         self.demographics = pd.read_csv('data/Raw/shhs/datasets/shhs-harmonized-dataset-0.20.0.csv')
         self.choose_patients()  # Updates demographics DataFrame to only include acceptable examples.
 
+    def process(self):
         for nsrrid in self.demographics["nsrrid"]:
             raw_eeg = self.load_raw_eeg(self, nsrrid)
             stage = self.load_stage_labels(self, nsrrid, raw_eeg)
@@ -190,5 +191,27 @@ class SHHSPreprocessor:
         data = np.concatenate((np.squeeze(selected_features), np.expand_dims(selected_labels, 1)), axis=1)
         df = pd.DataFrame(data, columns=dataframe_columns)
         # Write the dataframe to csv
+        # SHHSConfig_f is dependent on this filename format - be careful changing it.
         df.to_csv(f"data/Processed/shhs/Frequency_Features/nsrrid_{nsrrid}.csv")
         return
+
+    # Finds the stage proportions based on the preprocessed data already saved to data/processed/shhs/frequency_features
+    @staticmethod
+    def get_stage_counts(self) -> dict:
+        root_dir = Path(__file__).parent.parent
+        data_dir = root_dir / "data/Processed/shhs/Frequency_Features/"
+        all_filenames = os.listdir(data_dir)
+
+        counts = {"N3": 0, "N1/N2": 0, "REM": 0, "W": 0}
+        enum = enumerate(counts)
+        for i in range(len(counts)):
+            label, stage = next(enum)
+            for file in all_filenames:
+                df = pd.read_csv(data_dir / file)
+                n = sum(df["Label"] == label)
+                counts[stage] += n
+        return counts
+
+
+pre = SHHSPreprocessor
+print(pre.get_stage_counts(pre))
