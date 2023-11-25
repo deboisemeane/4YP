@@ -10,7 +10,7 @@ bleach==4.1.0
 bottleneck==1.3.5
 brotli==1.1.0
 
-brotli-python==1.1.0
+
 bzip2==1.0.8
 ca-certificates==2023.08.22
 certifi==2023.7.22
