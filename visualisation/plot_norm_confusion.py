@@ -25,3 +25,4 @@ def plot_norm_confusion(confusion, title):
                            ha="center", va="center", color="w")
 
     ax.set_title(title)
+    plt.show()
