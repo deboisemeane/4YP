@@ -1,8 +1,13 @@
+import torch.cuda
+
 from scripts import TrainMLP, AdamConfig, SGDConfig, ISRUCConfig, SHHSConfig_f
 from utils import accuracy_metrics
 from visualisation import plot_norm_confusion
 from src.models import MLP1, MLP2
 import matplotlib.pyplot as plt
+
+# Find device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 # Training the MLP on SHHS data
@@ -15,7 +20,7 @@ resample = {"2": 2.84}
 data_config = SHHSConfig_f(split=split)
 optimiser_config = AdamConfig(lr=0.0001)
 
-trainer = TrainMLP(data_config=data_config, optimiser_config=optimiser_config, model=MLP1)
+trainer = TrainMLP(data_config=data_config, optimiser_config=optimiser_config, model=MLP1, device = device)
 trainer.train(n_epochs=1, print_losses=True)
 trainer.save_best_model()
 
