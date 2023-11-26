@@ -2,7 +2,6 @@ import copy
 from src.datasets import ISRUCDataset, SHHSDataset_f
 from src.models import MLP1
 from utils import calculate_ce_loss, confusion_matrix, accuracy_metrics
-import numpy as np
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
