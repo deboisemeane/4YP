@@ -85,7 +85,13 @@ class SHHSConfig_f(DataConfig):  # This config class is for frequency feature SH
 
 class TrainMLP:
 
-    def __init__(self, data_config: DataConfig, optimiser_config: OptimiserConfig, model=MLP1):
+    def __init__(self, data_config: DataConfig, optimiser_config: OptimiserConfig,
+                 device: torch.device,
+                 model=MLP1, ):
+
+        # Set the device
+        self.device = device if device is not None else torch.device("cpu")
+
         # Get dataset parameters from data_config
         self.data_config = data_config
         self.patients = data_config.params["patients"]
@@ -108,7 +114,7 @@ class TrainMLP:
         self.test_loader = DataLoader(self.test_dataset, batch_size=32, shuffle=False)
         # Instantiate the model and optimiser.
         self.optimiser_config = optimiser_config
-        self.model = model()
+        self.model = model().to(self.device)
         self.optimiser = self.__create_optimiser__(optimiser_config)
 
         # Initialise other attributes.
@@ -160,8 +166,8 @@ class TrainMLP:
 
             # Train for one epoch
             for i, batch in enumerate(self.train_loader):
-                x = batch['features']
-                labels = batch['label']
+                x = batch['features'].to(self.device)
+                labels = batch['label'].to(self.device)
                 optimiser.zero_grad()   # Because backpropagation accumulates gradients on weights we need to zero them each step.
                 y = self.model(x)
                 loss = criterion(y, labels)
