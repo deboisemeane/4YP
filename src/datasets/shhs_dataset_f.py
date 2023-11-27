@@ -24,7 +24,7 @@ class SHHSDataset_f(BaseDataset_f):
         classes = [0, 1, 2, 3]
         label_counts = np.zeros(4)
         for i in classes:
-            label_counts[i] = (int(self.data.iloc[:, -1]) == i).sum()
+            label_counts[i] = (self.data.iloc[:, -1] == float(i)).sum()
         self.label_counts = label_counts
 
         # Find weights which are inverse of label counts
