@@ -1,7 +1,7 @@
 import torch
 
 
-def calculate_ce_loss(model, cross_entropy_criterion, dataloader):  # Calculates the average loss over the whole dataset
+def calculate_ce_loss(model, cross_entropy_criterion, dataloader, device):  # Calculates the average loss over the whole dataset
 
     # This function averages loss correctly if criterion.reduce='mean' i.e. criterion is already averaging over each batch.
 
@@ -10,8 +10,8 @@ def calculate_ce_loss(model, cross_entropy_criterion, dataloader):  # Calculates
         total_loss = 0
         total_correct = 0
         for i, batch in enumerate(dataloader):
-            x = batch["features"]
-            labels = batch["label"]
+            x = batch["features"].to(device)  # Move features to device
+            labels = batch["label"].to(device)  # Move labels to device
 
             y = model(x)
             loss = criterion(y, labels)
