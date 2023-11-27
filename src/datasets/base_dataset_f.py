@@ -1,6 +1,7 @@
 import pandas as pd
 import torch
 import torch.utils.data as d
+import numpy as np
 
 
 # Base class for frequency feature datasets.
@@ -8,6 +9,8 @@ import torch.utils.data as d
 class BaseDataset_f(d.Dataset):
     resample_factors: dict[str:float]
     data: pd.DataFrame
+    label_counts: np.ndarray  # Number of examples for each label 0, 1, 2, 3
+    weight: torch.tensor  # Weight for loss criterion, based on inverse of label counts
 
     # Resample factors should be specified in a dictionary {"label": factor}
     def resample(self):

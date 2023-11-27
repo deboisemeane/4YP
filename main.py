@@ -20,7 +20,7 @@ resample = {"2": 2.84}
 data_config = SHHSConfig_f(split=split)
 optimiser_config = AdamConfig(lr=0.0001)
 
-trainer = TrainMLP(data_config=data_config, optimiser_config=optimiser_config, model=MLP1, device = device)
+trainer = TrainMLP(data_config=data_config, optimiser_config=optimiser_config, model=MLP1, device=device)
 trainer.train(n_epochs=1, print_losses=True)
 
 trainer.save_best_model()
