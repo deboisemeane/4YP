@@ -153,8 +153,8 @@ class TrainMLP:
         # Training loop
         for epoch in range(n_epochs):  # Loops over the entire training set
             # Calculate and store the current average training and validation losses
-            train_loss, train_accuracy = calculate_ce_loss(self.model, criterion, self.train_loader)
-            val_loss, val_accuracy = calculate_ce_loss(self.model, criterion, self.val_loader)
+            train_loss, train_accuracy = calculate_ce_loss(self.model, criterion, self.train_loader, self.device)
+            val_loss, val_accuracy = calculate_ce_loss(self.model, criterion, self.val_loader, self.device)
             TL.append(train_loss)
             VL.append(val_loss)
 
@@ -179,8 +179,8 @@ class TrainMLP:
                 optimiser.step()
 
         # Calculate and store the losses after the final epoch
-        train_loss, train_accuracy = calculate_ce_loss(self.model, criterion, self.train_loader)
-        val_loss, val_accuracy = calculate_ce_loss(self.model, criterion, self.val_loader)
+        train_loss, train_accuracy = calculate_ce_loss(self.model, criterion, self.train_loader, self.device)
+        val_loss, val_accuracy = calculate_ce_loss(self.model, criterion, self.val_loader, self.device)
         TL.append(train_loss)
         VL.append(val_loss)
         self.VL = VL
