@@ -23,6 +23,7 @@ class SHHSPreprocessor:
         self.choose_patients()  # Updates demographics DataFrame to only include acceptable examples.
 
     def process(self, art_rejection: bool = True):
+        rejections = 0
         for nsrrid in self.demographics["nsrrid"]:
             raw_eeg = self.load_raw_eeg(self, nsrrid)
             stage = self.load_stage_labels(self, nsrrid, raw_eeg)
@@ -31,12 +32,16 @@ class SHHSPreprocessor:
             if art_rejection is True:
                 reject = self.std_rejection(raw_eeg, stage)
                 if reject is True:
-                    break
+                    rejections += 1
+                    continue  # Skips to next nsrrid
 
             lpf_epochs = self.create_lpf_epochs(raw_eeg, stage)
             freqs, fft_data = self.apply_hamming_fft(self, lpf_epochs)
             feature_freqs, features = self.select_freq_features(freqs, fft_data)
             self.save_features_labels_csv(nsrrid, features, lpf_epochs)
+
+        if art_rejection is True:
+            print(f"{rejections} recordings rejected due to >2% of epochs being artefacts.")
 
     # Sleep disorders, second visits, and unavailable sleep scoring are excluded.
     def choose_patients(self):
