@@ -1,6 +1,8 @@
 from pathlib import Path
 import pandas as pd
 from .base_dataset_f import BaseDataset_f
+import torch
+import numpy as np
 
 
 # Custom dataset for handcrafted frequency features.
@@ -18,3 +20,16 @@ class SHHSDataset_f(BaseDataset_f):
         if resample is not None:
             self.resample()
 
+        # Find label counts
+        classes = [0, 1, 2, 3]
+        label_counts = np.zeros(4)
+        for i in classes:
+            label_counts[i] = (int(self.data.iloc[:, -1]) == i).sum()
+        self.label_counts = label_counts
+
+        # Find weights which are inverse of label counts
+        total_count = len(self.data)
+        weight = total_count / label_counts
+        weight = weight / weight.sum()  # Normalise weights
+        weight = torch.tensor(weight).float()
+        self.weight = weight

@@ -133,10 +133,13 @@ class TrainMLP:
             raise ValueError("Unsupported optimiser configuration.")
         return optimiser
 
-    def train(self, n_epochs, print_losses=True):
+    def train(self, n_epochs, print_losses=True, weight_losses=True):
+
+        # Set criterion weight based on inverse of class sizes in the training data.
+        weight = self.train_dataset.weight.to(self.device) if weight_losses is True else None
 
         # Set criterion and optimiser
-        criterion = nn.CrossEntropyLoss()
+        criterion = nn.CrossEntropyLoss(weight=weight)
         optimiser = self.optimiser
 
         # Initialise lists for plotting loss
