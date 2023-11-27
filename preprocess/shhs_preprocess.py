@@ -22,7 +22,8 @@ class SHHSPreprocessor:
         self.demographics = pd.read_csv('data/Raw/shhs/datasets/shhs-harmonized-dataset-0.20.0.csv')
         self.choose_patients()  # Updates demographics DataFrame to only include acceptable examples.
 
-    def process(self, art_rejection: bool = True):
+    # Generates and saves to csv frequency domain features.
+    def process_f(self, art_rejection: bool = True):
         rejections = 0
         for nsrrid in self.demographics["nsrrid"]:
             raw_eeg = self.load_raw_eeg(self, nsrrid)
