@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import xml.etree.ElementTree as ET
 from pathlib import Path
+import yasa
 
 
 # This class is used to process raw SHHS-1 data for all (selected) participants.
@@ -21,10 +22,17 @@ class SHHSPreprocessor:
         self.demographics = pd.read_csv('data/Raw/shhs/datasets/shhs-harmonized-dataset-0.20.0.csv')
         self.choose_patients()  # Updates demographics DataFrame to only include acceptable examples.
 
-    def process(self):
+    def process(self, art_rejection: bool = True):
         for nsrrid in self.demographics["nsrrid"]:
             raw_eeg = self.load_raw_eeg(self, nsrrid)
             stage = self.load_stage_labels(self, nsrrid, raw_eeg)
+
+            # Artefact rejection
+            if art_rejection is True:
+                reject = self.std_rejection(raw_eeg, stage)
+                if reject is True:
+                    break
+
             lpf_epochs = self.create_lpf_epochs(raw_eeg, stage)
             freqs, fft_data = self.apply_hamming_fft(self, lpf_epochs)
             feature_freqs, features = self.select_freq_features(freqs, fft_data)
@@ -61,7 +69,7 @@ class SHHSPreprocessor:
         raw_eeg = mne.io.read_raw_edf(patient_path, include=channel)
         return raw_eeg
 
-    # Returns a numpy array containing the sleep stage labels for nsrrid.
+    # Returns a list containing the sleep stage labels for nsrrid.
     @staticmethod
     def load_stage_labels(self, nsrrid, raw_eeg) -> list:
         # Initialise labels array for one patient
@@ -110,6 +118,17 @@ class SHHSPreprocessor:
         else:
             print(f"Annotations file for id {nsrrid} not available.")
         return labels
+
+    # Standard deviation based artifact rejection using YASA. Returns a bool deciding to reject the recording.
+    @staticmethod
+    def std_rejection(data: mne.io.Raw, stage: list) -> bool:
+        art_epochs, zscores = yasa.art_detect(data=data, window=30, hypno=stage, include=(0, 1, 2), method='std')
+        # Reject recording if >2% of epochs are artifacts
+        if sum(art_epochs) / len(art_epochs) > 0.02:
+            reject = True
+        else:
+            reject = False
+        return reject
 
     # Return a filtered mne.Epochs, with stage labels applied as metadata
     def create_lpf_epochs(self, raw_eeg: mne.io.Raw, stage: list) -> mne.Epochs:
