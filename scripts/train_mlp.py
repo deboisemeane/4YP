@@ -203,7 +203,7 @@ class TrainMLP:
         # Load the best model parameters
         self.model.load_state_dict(self.best_model_state)
         # Calculate the confusion matrix
-        confusion = confusion_matrix(self.model, self.test_loader)
+        confusion = confusion_matrix(self.model, self.test_loader, self.device)
         metrics = accuracy_metrics(confusion)
         self.confusion = confusion
         self.metrics = metrics
