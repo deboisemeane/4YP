@@ -137,6 +137,7 @@ class TrainMLP:
 
         # Set criterion weight based on inverse of class sizes in the training data.
         weight = self.train_dataset.weight.to(self.device) if weight_losses is True else None
+        print(f"Weighting losses: {weight}")
 
         # Set criterion and optimiser
         criterion = nn.CrossEntropyLoss(weight=weight)
