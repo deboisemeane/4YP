@@ -22,7 +22,28 @@ class SHHSPreprocessor:
         self.demographics = pd.read_csv('data/Raw/shhs/datasets/shhs-harmonized-dataset-0.20.0.csv')
         self.choose_patients()  # Updates demographics DataFrame to only include acceptable examples.
 
-    # Generates and saves to csv frequency domain features.
+    # Generates and saves to csv time domain inputs and labels.
+    def process_t(self, incl_preceeding_epochs: int = 0, incl_following_epochs: int = 0, art_rejection: bool = True):
+        # Check valid number of included epochs
+        assert incl_preceeding_epochs >= 0, "Number of preceeding epochs to include with each example must be >= 0"
+        assert incl_following_epochs >= 0, "Number of following epochs to include with each example must be >=0"
+
+        rejections = 0  # We will count the number of recordings rejected due to artefacts.
+        for nsrrid in self.demographics["nsrrid"]:
+            raw_eeg = self.load_raw_eeg(self, nsrrid)
+            stage = self.load_stage_labels(self, nsrrid, raw_eeg)
+            # Artefact rejection
+            if art_rejection is True:
+                reject = self.std_rejection(raw_eeg, stage)
+                if reject is True:
+                    rejections += 1
+                    continue # Skips to next nsrrid
+            lpf_epochs = self.create_lpf_epochs(raw_eeg, stage)
+
+            if art_rejection is True:
+                print(f"{rejections} recordings rejected due to >2% of epochs being artefacts.")
+
+    # Generates and saves to csv frequency domain features and labels.
     def process_f(self, art_rejection: bool = True):
         rejections = 0
         for nsrrid in self.demographics["nsrrid"]:
