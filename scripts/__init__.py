@@ -1,2 +1,2 @@
-from .train_mlp import TrainMLP
-from .train_mlp import OptimiserConfig, AdamConfig, SGDConfig, ISRUCConfig, SHHSConfig_f
+from .train import Train
+from .train import OptimiserConfig, AdamConfig, SGDConfig, ISRUCConfig, SHHSConfig

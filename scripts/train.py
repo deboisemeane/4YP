@@ -89,7 +89,7 @@ class SHHSConfig(DataConfig):  # This config class is for frequency feature SHHS
         self.params.update({"patients": self.patients})
 
 
-class TrainMLP:
+class Train:
 
     def __init__(self, data_config: DataConfig, optimiser_config: OptimiserConfig,
                  device: torch.device,
