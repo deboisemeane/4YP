@@ -1,12 +1,12 @@
 from pathlib import Path
 import pandas as pd
-from .base_dataset_f import BaseDataset_f
+from .base_dataset import BaseDataset
 import torch
 import numpy as np
 
 
 # Custom dataset for handcrafted frequency features.
-class SHHSDataset_f(BaseDataset_f):
+class SHHSDataset_f(BaseDataset):
 
     def __init__(self, nsrrids: list[int], resample=None):
         data = []
