@@ -46,11 +46,17 @@ class ISRUCConfig(DataConfig):
             # !!Resampling will only apply to the training dataset!!
 
 
-class SHHSConfig_f(DataConfig):  # This config class is for frequency feature SHHS datasets.
-    def __init__(self, split: dict, resample: dict = None, **kwargs):
+class SHHSConfig(DataConfig):  # This config class is for frequency feature SHHS datasets.
+    def __init__(self, split: dict, data_type: str, resample: dict = None, **kwargs):
         super().__init__(resample=resample, **kwargs)
         root_dir = Path(__file__).parent.parent
-        data_dir = root_dir / "data/Processed/shhs/Frequency_Features/"
+
+        if data_type == "f":
+            data_dir = root_dir / "data/Processed/shhs/Frequency_Features/"
+        elif data_type == "t":
+            data_dir = root_dir / "data/Processed/shhs/Time_Features/"
+        else:
+            raise ValueError("Data type should be 'f' or 't'.")
 
         # Read all CSV filenames and extract nsrrids
         all_filenames = os.listdir(data_dir)
@@ -103,7 +109,7 @@ class TrainMLP:
             self.val_dataset = ISRUCDataset(patients=self.patients["val"])
             self.test_dataset = ISRUCDataset(patients=self.patients["test"])
 
-        elif isinstance(data_config, SHHSConfig_f):
+        elif isinstance(data_config, SHHSConfig):
             self.train_dataset = SHHSDataset_f(nsrrids=self.patients["train"], resample=self.resample)
             self.val_dataset = SHHSDataset_f(nsrrids=self.patients["val"])
             self.test_dataset = SHHSDataset_f(nsrrids=self.patients["test"])
