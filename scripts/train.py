@@ -73,7 +73,7 @@ class SHHSConfig(DataConfig):  # This config class is for frequency feature SHHS
 
         # Check if the total number required exceeds the available number
         if total > len(all_nsrrids):
-            raise ValueError("Requested total split size exceeds the number of available nsrrids")
+            raise ValueError(f"Requested total split size ({total}) exceeds the number of available nsrrids ({len(all_nsrrids)}).")
 
         # Select subsets for each dataset
         train_nsrrids = all_nsrrids[:n_train]
