@@ -6,7 +6,7 @@ import numpy as np
 
 # Base class for frequency feature datasets.
 
-class BaseDataset_f(d.Dataset):
+class BaseDataset(d.Dataset):
     resample_factors: dict[str:float]
     data: pd.DataFrame
     label_counts: np.ndarray  # Number of examples for each label 0, 1, 2, 3

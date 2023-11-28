@@ -2,10 +2,10 @@ from pathlib import Path
 import pandas as pd
 import torch
 import torch.utils.data as d
-from .base_dataset_f import BaseDataset_f
+from .base_dataset import BaseDataset
 
 
-class ISRUCDataset(BaseDataset_f):    # This class is instantiated to select frequency feature data for chosen patients
+class ISRUCDataset(BaseDataset):    # This class is instantiated to select frequency feature data for chosen patients
 
     def __init__(self, patients, resample=None):
 
