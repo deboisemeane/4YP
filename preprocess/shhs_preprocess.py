@@ -23,8 +23,9 @@ class SHHSPreprocessor:
         self.choose_patients()  # Updates demographics DataFrame to only include acceptable examples.
 
     # Generates and saves to csv time domain inputs and labels.
-    def process_t(self, incl_preceeding_epochs: int = 0, incl_following_epochs: int = 0, art_rejection: bool = True):
-        # Check valid number of included epochs
+    def process_t(self, incl_preceeding_epochs: int = 0, incl_following_epochs: int = 0, art_rejection: bool = False):
+
+        # Check valid number of preceeding and following epochs for each example.
         assert incl_preceeding_epochs >= 0, "Number of preceeding epochs to include with each example must be >= 0"
         assert incl_following_epochs >= 0, "Number of following epochs to include with each example must be >=0"
 
@@ -32,19 +33,24 @@ class SHHSPreprocessor:
         for nsrrid in self.demographics["nsrrid"]:
             raw_eeg = self.load_raw_eeg(self, nsrrid)
             stage = self.load_stage_labels(self, nsrrid, raw_eeg)
+
             # Artefact rejection
             if art_rejection is True:
                 reject = self.std_rejection(raw_eeg, stage)
                 if reject is True:
                     rejections += 1
-                    continue # Skips to next nsrrid
-            lpf_epochs = self.create_lpf_epochs(raw_eeg, stage)
+                    continue  # Skips to next nsrrid
 
+            # Low pass filter and create mne.Epochs object with stage label metadata.
+            lpf_epochs = self.create_lpf_epochs(raw_eeg, stage)
+            # Save the time features to csv
+            self.save_t_features_labels_csv(nsrrid, lpf_epochs, incl_preceeding_epochs=incl_preceeding_epochs,
+                                            incl_following_epochs=incl_following_epochs)
             if art_rejection is True:
                 print(f"{rejections} recordings rejected due to >2% of epochs being artefacts.")
 
     # Generates and saves to csv frequency domain features and labels.
-    def process_f(self, art_rejection: bool = True):
+    def process_f(self, art_rejection: bool = False):
         rejections = 0
         for nsrrid in self.demographics["nsrrid"]:
             raw_eeg = self.load_raw_eeg(self, nsrrid)
@@ -60,7 +66,7 @@ class SHHSPreprocessor:
             lpf_epochs = self.create_lpf_epochs(raw_eeg, stage)
             freqs, fft_data = self.apply_hamming_fft(self, lpf_epochs)
             feature_freqs, features = self.select_freq_features(freqs, fft_data)
-            self.save_features_labels_csv(nsrrid, features, lpf_epochs)
+            self.save_f_features_labels_csv(nsrrid, features, lpf_epochs)
 
         if art_rejection is True:
             print(f"{rejections} recordings rejected due to >2% of epochs being artefacts.")
@@ -224,8 +230,8 @@ class SHHSPreprocessor:
         print(np.sum(normalised_features ** 2, axis=2)) # Check that total energy of features in each epoch = 1
         return feature_freqs, normalised_features
 
-    # Save features and labels to csv
-    def save_features_labels_csv(self, nsrrid, features, epochs):  # Saves features and labels (where experts agree) to csv.
+    # Save frequency features and labels to csv
+    def save_f_features_labels_csv(self, nsrrid, features, epochs):  # Saves features and labels (where experts agree) to csv.
         # Find the examples that has a label (where experts agree) (Boolean Indexing)
         label_bool_idx = np.logical_not(epochs.metadata["Sleep Stage"].isna())
         # Select the features for the examples where the two experts agree, using boolean indexing.
@@ -240,6 +246,41 @@ class SHHSPreprocessor:
         # SHHSConfig_f is dependent on this filename format - be careful changing it.
         df.to_csv(f"data/Processed/shhs/Frequency_Features/nsrrid_{nsrrid}.csv")
         return
+
+    # Save time domain features and labels to csv
+    @staticmethod
+    def save_t_features_labels_csv(nsrrid, lpf_epochs: mne.Epochs,
+                                   incl_preceeding_epochs: int, incl_following_epochs: int):
+        data = lpf_epochs.get_data()
+        labels = lpf_epochs.metadata["Sleep Stage"]
+        n_epochs, n_samples_per_epoch = data.shape[0], data.shape[2]
+        t_features = []
+        t_labels = []
+
+        for i in range(n_epochs):
+
+            # Check that this epoch has a label
+            if labels[i] is None:
+                continue  # Skip this epoch if it doesn't have a label.
+
+            # Check that the required preceeding and following epochs are present
+            start_idx = i - incl_preceeding_epochs
+            end_idx = i + incl_following_epochs + 1
+            if start_idx < 0 or end_idx > n_epochs:
+                continue  # Skip this epoch if too close to edges of recording.
+
+            t_features.append(data[start_idx:end_idx, :, :].flatten())
+            t_labels.append(labels[i])
+
+        t_features = np.array(t_features)
+        t_labels = np.array(t_labels)
+
+        # Save to dataframe
+        dataframe_columns = [str(sample_no) for sample_no in range(1, 1+n_samples_per_epoch)] + ["label"]
+        data = np.concatenate((t_features, t_labels), axis=1)
+        df = pd.DataFrame(data, columns = dataframe_columns)
+        # SHHSConfig_t is dependent on this filename format - be careful changing it.
+        df.to_csv(f"data/Processed/shhs/Time_Features/nsrrid_{nsrrid}.csv")
 
     # Finds the stage proportions based on the preprocessed data already saved to data/processed/shhs/frequency_features
     @staticmethod
@@ -258,6 +299,3 @@ class SHHSPreprocessor:
                 counts[stage] += n
         return counts
 
-
-pre = SHHSPreprocessor
-print(pre.get_stage_counts(pre))
