@@ -6,13 +6,21 @@ import numpy as np
 
 
 # Custom dataset for handcrafted frequency features.
-class SHHSDataset_f(BaseDataset):
+class SHHSDataset(BaseDataset):
 
-    def __init__(self, nsrrids: list[int], resample=None):
+    def __init__(self, nsrrids: list[int], data_type: str, resample=None):
         data = []
         root_path = Path(__file__).parent.parent.parent
+
+        if data_type == "f":
+            data_dir = root_path / "data/Processed/shhs/Frequency_Features/"
+        elif data_type == "t":
+            data_dir = root_path / "data/Processed/shhs/Time_Features/"
+        else:
+            raise ValueError("Data type should be 'f' or 't'.")
+
         for nsrrid in nsrrids:
-            participant_data = pd.read_csv(root_path / f"data/Processed/shhs/Frequency_Features/nsrrid_{nsrrid}.csv")
+            participant_data = pd.read_csv(data_dir / f"nsrrid_{nsrrid}.csv")
             data.append(participant_data)
         self.data = pd.concat(data, axis=0)
 
