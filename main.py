@@ -17,7 +17,7 @@ split = {"train": 350,
          "test":  50}
 resample = {"2": 2.84}
 
-data_config = SHHSConfig(split=split, data_type="t", resample=None)
+data_config = SHHSConfig(split=split, data_type="f", resample=None)
 optimiser_config = AdamConfig(lr=0.0001)
 
 trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=MLP1, device=device)
