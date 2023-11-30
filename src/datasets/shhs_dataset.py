@@ -12,6 +12,7 @@ class SHHSDataset(BaseDataset):
         data = []
         root_path = Path(__file__).parent.parent.parent
 
+        # Choose a data type
         if data_type == "f":
             data_dir = root_path / "data/Processed/shhs/Frequency_Features/"
         elif data_type == "t":
@@ -19,11 +20,13 @@ class SHHSDataset(BaseDataset):
         else:
             raise ValueError("Data type should be 'f' or 't'.")
 
+        # Collect dataframes for chosen nsrrids
         for nsrrid in nsrrids:
             participant_data = pd.read_csv(data_dir / f"nsrrid_{nsrrid}.csv")
             data.append(participant_data)
         self.data = pd.concat(data, axis=0)
 
+        # Perform resampling
         self.resample_factors = resample
         if resample is not None:
             self.resample()
@@ -35,7 +38,7 @@ class SHHSDataset(BaseDataset):
             label_counts[i] = (self.data.iloc[:, -1] == float(i)).sum()
         self.label_counts = label_counts
 
-        # Find weights which are inverse of label counts
+        # Find weights which are inversely proportionl to label counts
         total_count = len(self.data)
         weight = total_count / label_counts
         weight = weight / weight.sum()  # Normalise weights
