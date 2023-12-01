@@ -22,7 +22,7 @@ data_config = SHHSConfig(split=split, data_type="f", resample=None)
 optimiser_config = AdamConfig(lr=0.0001)
 
 trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=MLP1, device=device)
-trainer.train(n_epochs=30, print_losses=True, weight_losses=True)
+trainer.train(n_epochs=1, print_losses=True, weight_losses=True)
 
 trainer.save_best_model()
 
@@ -36,4 +36,5 @@ plt.savefig(f'figures/weighted_loss_MLP1_shhs1_{split["train"]}-{split["val"]}-{
 
 # Testing
 trainer.test()
-plot_norm_confusion(trainer.confusion, 'MLP trained on SHHS-1 dataset (350-150-50 split)')
+
+# plot_norm_confusion(trainer.confusion, 'MLP trained on SHHS-1 dataset (350-150-50 split)')
