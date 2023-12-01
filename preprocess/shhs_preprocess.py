@@ -12,6 +12,7 @@ class SHHSPreprocessor:
 
     def __init__(self, **params):
         default_params = {"channel": "EEG",  # EEG gives C4-A1, EEG(sec) gives C3-A2
+                          "lpf": True,       # Decide whether to low pass filter
                           "lpf_cutoff": 30,
                           "feature_bin_freqwidth": 1,
                           "n_features": 20
@@ -42,9 +43,9 @@ class SHHSPreprocessor:
                     continue  # Skips to next nsrrid
 
             # Low pass filter and create mne.Epochs object with stage label metadata.
-            lpf_epochs = self.create_lpf_epochs(raw_eeg, stage)
+            epochs = self.create_epochs(raw_eeg, stage)
             # Save the time features to csv
-            self.save_t_features_labels_csv(nsrrid, lpf_epochs, incl_preceeding_epochs=incl_preceeding_epochs,
+            self.save_t_features_labels_csv(nsrrid, epochs, incl_preceeding_epochs=incl_preceeding_epochs,
                                             incl_following_epochs=incl_following_epochs)
             if art_rejection is True:
                 print(f"{rejections} recordings rejected due to >2% of epochs being artefacts.")
@@ -63,7 +64,7 @@ class SHHSPreprocessor:
                     rejections += 1
                     continue  # Skips to next nsrrid
 
-            lpf_epochs = self.create_lpf_epochs(raw_eeg, stage)
+            lpf_epochs = self.create_epochs(raw_eeg, stage)
             freqs, fft_data = self.apply_hamming_fft(self, lpf_epochs)
             feature_freqs, features = self.select_freq_features(freqs, fft_data)
             self.save_f_features_labels_csv(nsrrid, features, lpf_epochs)
@@ -163,8 +164,8 @@ class SHHSPreprocessor:
             reject = False
         return reject
 
-    # Return a filtered mne.Epochs, with stage labels applied as metadata
-    def create_lpf_epochs(self, raw_eeg: mne.io.Raw, stage: list) -> mne.Epochs:
+    # Return a mne.Epochs object, with stage labels applied as metadata
+    def create_epochs(self, raw_eeg: mne.io.Raw, stage: list) -> mne.Epochs:
         # d.c. detrend around 0
         detrend = 0
         # Stick on sleep stage as metadata.
@@ -174,9 +175,10 @@ class SHHSPreprocessor:
         epochs = mne.Epochs(raw_eeg, events, tmin=0, tmax=30,
                             metadata=metadata, preload=True, detrend=detrend, baseline=None)
         # LPF
-        lpf_epochs = epochs.copy().filter(l_freq=None, h_freq=self.params["lpf_cutoff"], method='fir',
-                                          fir_design='firwin', phase='zero')
-        return lpf_epochs
+        if self.params["lpf"] is True:
+            epochs = epochs.copy().filter(l_freq=None, h_freq=self.params["lpf_cutoff"], method='fir',
+                                          fir_design='firwin', phase='zero', verbose='WARNING')
+        return epochs
 
     # FFT
     @staticmethod
@@ -249,10 +251,10 @@ class SHHSPreprocessor:
 
     # Save time domain features and labels to csv
     @staticmethod
-    def save_t_features_labels_csv(nsrrid, lpf_epochs: mne.Epochs,
+    def save_t_features_labels_csv(nsrrid, epochs: mne.Epochs,
                                    incl_preceeding_epochs: int, incl_following_epochs: int):
-        data = lpf_epochs.get_data()
-        labels = lpf_epochs.metadata["Sleep Stage"]
+        data = epochs.get_data()
+        labels = epochs.metadata["Sleep Stage"]
         n_epochs, n_samples_per_epoch = data.shape[0], data.shape[2]
         t_features = []
         t_labels = []
