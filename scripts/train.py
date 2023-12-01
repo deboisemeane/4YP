@@ -47,7 +47,7 @@ class ISRUCConfig(DataConfig):
 
 class SHHSConfig(DataConfig):  # This config class is for frequency feature SHHS datasets.
     def __init__(self, split: dict, data_type: str, resample: dict = None, **kwargs):
-        super().__init__(resample=resample, data_type=data_type, **kwargs)
+        super().__init__(resample=resample, data_type=data_type, split=split, **kwargs)
         root_dir = Path(__file__).parent.parent
 
         # Choosing between frequency or time domain data.
@@ -142,9 +142,13 @@ class Train:
 
     def train(self, n_epochs, print_losses=True, weight_losses=True):
 
+        # Display data split
+        print(f"Training with split {self.data_config.params['split']}")
         # Set criterion weight based on inverse of class sizes in the training data.
         weight = self.train_dataset.weight.to(self.device) if weight_losses is True else None
-        print(f"Weighting losses: {weight}")
+        print(f"Class counts in training data: {self.train_dataset.label_counts}")
+        if weight_losses is True:
+            print(f"Weighting loss: {weight}")
 
         # Set criterion and optimiser
         criterion = nn.CrossEntropyLoss(weight=weight)
