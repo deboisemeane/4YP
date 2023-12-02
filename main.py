@@ -7,6 +7,7 @@ from src.models import MLP1, MLP2
 import matplotlib.pyplot as plt
 
 # Find device
+print("Using cuda" if torch.cuda.is_available() else "Using cpu")
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
