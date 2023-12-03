@@ -21,11 +21,11 @@ class MLP1(nn.Module):   # Multi-Layer Perceptron with either 1 or 2 hidden laye
 
 class MLP2(nn.Module):
     def __init__(self, initialiser=torch.nn.init.xavier_uniform_):
-        super(MLP2, self).__init__() # What do the arguments to super() mean here?
+        super(MLP2, self).__init__()  # What do the arguments to super() mean here?
         self.fc1 = nn.Linear(20,10)
         self.fc2 = nn.Linear(10, 10)
         self.fc3 = nn.Linear(10,4)
-        # Use Xavier normal intialisation
+        # Initialisation
         initialiser(self.fc1.weight)
         initialiser(self.fc2.weight)
         initialiser(self.fc3.weight)
