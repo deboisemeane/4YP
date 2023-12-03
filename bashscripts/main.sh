@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=10:00
+#SBATCH --time=1:0:00
 #SBATCH --output=outputs/main.stdout
 
 source ~/miniconda/etc/profile.d/conda.sh
