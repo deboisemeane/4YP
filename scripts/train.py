@@ -207,7 +207,12 @@ class Train:
 
     def save_best_model(self):
         # Save the model state
-        torch.save(self.best_model_state, f"model_checkpoints/{self.model.__class__.__name__}.pt")
+        if os.path.isdir("model_checkpoints"):
+            torch.save(self.best_model_state, f"model_checkpoints/{self.model.__class__.__name__}.pt")
+        else:
+            os.makedirs("model_checkpoints")
+            torch.save(self.best_model_state, f"model_checkpoints/{self.model.__class__.__name__}.pt")
+
 
     # Evaluates a confusion matrix on the test dataset for the best model achieved
     def test(self):
