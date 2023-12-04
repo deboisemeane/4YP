@@ -5,6 +5,7 @@ import pandas as pd
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import yasa
+from utils import get_data_dir_shhs
 
 
 # This class is used to process raw SHHS-1 data for all (selected) participants.
@@ -15,7 +16,8 @@ class SHHSPreprocessor:
                           "lpf": True,       # Decide whether to low pass filter
                           "lpf_cutoff": 30,
                           "feature_bin_freqwidth": 1,
-                          "n_features": 20
+                          "n_features": 20,
+                          "art_rejection": False
                           }
         self.params = default_params
         self.params.update(params)
@@ -51,7 +53,8 @@ class SHHSPreprocessor:
                 print(f"{rejections} recordings rejected due to >2% of epochs being artefacts.")
 
     # Generates and saves to csv frequency domain features and labels.
-    def process_f(self, art_rejection: bool = False):
+    def process_f(self):
+        art_rejection = self.params["art_rejection"]
         rejections = 0
         for nsrrid in self.demographics["nsrrid"]:
             raw_eeg = self.load_raw_eeg(self, nsrrid)
@@ -156,7 +159,29 @@ class SHHSPreprocessor:
     # Standard deviation based artifact rejection using YASA. Returns a bool deciding to reject the recording.
     @staticmethod
     def std_rejection(data: mne.io.Raw, stage: list) -> bool:
-        art_epochs, zscores = yasa.art_detect(data=data, window=30, hypno=stage, include=(0, 1, 2), method='std')
+        data_np = data.get_data()
+        # Make sure data and hypnogram have same number of samples - this is required by yasa.art_detect
+        n_samples = data.get_data().shape[1]
+            # Repeat each stage label to match number of eeg samples
+        sf = data.info["sfreq"]
+        samples_per_window = 30 * sf
+        hypno = [x for x in stage for _ in range(int(samples_per_window))]
+            # Remove excess points for final window which is <30s
+        excess = int(n_samples % samples_per_window)
+        if excess != 0:
+            hypno = hypno[0:-excess]
+
+        hypno_np = np.array(hypno)
+
+        # Remove samples where no label is given, to prevent yasa.art_detect from breaking
+        # Create a mask where None values are marked as False
+        mask = hypno_np != None
+
+        # Filter both arrays using the mask
+        hypno = hypno_np[mask]
+        data = np.squeeze(data_np)[mask]
+
+        art_epochs, zscores = yasa.art_detect(data=data, window=30, hypno=hypno, sf=sf, include=(0, 1, 2), method='std')
         # Reject recording if >2% of epochs are artifacts
         if sum(art_epochs) / len(art_epochs) > 0.02:
             reject = True
@@ -229,11 +254,16 @@ class SHHSPreprocessor:
         epoch_energies = np.sum(binned_data ** 2, axis=2)  # Summing over features - energy for each epoch
         epoch_energies = epoch_energies[:, :, np.newaxis]  # Add a new axis to make sure broadcasting works correctly.
         normalised_features = binned_data / np.sqrt(epoch_energies)
-        print(np.sum(normalised_features ** 2, axis=2)) # Check that total energy of features in each epoch = 1
+        # print(np.sum(normalised_features ** 2, axis=2)) # Check that total energy of features in each epoch = 1
         return feature_freqs, normalised_features
 
     # Save frequency features and labels to csv
     def save_f_features_labels_csv(self, nsrrid, features, epochs):  # Saves features and labels (where experts agree) to csv.
+        # Find the directory to save data to
+        data_dir = get_data_dir_shhs(data_type="f", art_rejection=self.params["art_rejection"], lpf=self.params["lpf"])
+        # Check data_dir is a directory and make one if not
+        if np.logical_not(os.path.isdir(data_dir)):
+            os.makedirs(data_dir)
         # Find the examples that has a label (where experts agree) (Boolean Indexing)
         label_bool_idx = np.logical_not(epochs.metadata["Sleep Stage"].isna())
         # Select the features for the examples where the two experts agree, using boolean indexing.
@@ -246,7 +276,7 @@ class SHHSPreprocessor:
         df = pd.DataFrame(data, columns=dataframe_columns)
         # Write the dataframe to csv
         # SHHSConfig_f is dependent on this filename format - be careful changing it.
-        df.to_csv(f"data/Processed/shhs/Frequency_Features/nsrrid_{nsrrid}.csv")
+        df.to_csv(data_dir / f"nsrrid_{nsrrid}.csv")
         return
 
     # Save time domain features and labels to csv
@@ -288,7 +318,7 @@ class SHHSPreprocessor:
     @staticmethod
     def get_stage_counts(self) -> dict:
         root_dir = Path(__file__).parent.parent
-        data_dir = root_dir / "data/Processed/shhs/Frequency_Features/"
+        data_dir = root_dir / "data/Processed/shhs/art_rejection_0_lpf_1/"
         all_filenames = os.listdir(data_dir)
 
         counts = {"N3": 0, "N1/N2": 0, "REM": 0, "W": 0}
