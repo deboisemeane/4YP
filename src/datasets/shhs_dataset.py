@@ -8,17 +8,8 @@ import numpy as np
 # Custom dataset for handcrafted frequency features.
 class SHHSDataset(BaseDataset):
 
-    def __init__(self, nsrrids: list[int], data_type: str, resample=None):
+    def __init__(self, nsrrids: list[int], data_dir: str, resample=None):
         data = []
-        root_path = Path(__file__).parent.parent.parent
-
-        # Choose a data type
-        if data_type == "f":
-            data_dir = root_path / "data/Processed/shhs/Frequency_Features/"
-        elif data_type == "t":
-            data_dir = root_path / "data/Processed/shhs/Time_Features/"
-        else:
-            raise ValueError("Data type should be 'f' or 't'.")
 
         # Collect dataframes for chosen nsrrids
         for nsrrid in nsrrids:
