@@ -23,7 +23,7 @@ data_config = SHHSConfig(split=split, data_type="f", art_rejection=True, resampl
 optimiser_config = AdamConfig(lr=0.0001)
 
 trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=MLP1, device=device)
-trainer.train(n_epochs=1, print_losses=True, weight_losses=False)
+trainer.train(n_epochs=1, print_losses=True, weight_losses=True)
 
 # Testing
 trainer.test()
@@ -31,8 +31,8 @@ trainer.test()
 
 # Plotting loss for training with SHHS
 fig, ax = plt.subplots()
-ax.set_title("CrossEntropyLoss training 20-10-4 MLP with SHHS-1, Artefacts rejected")
+ax.set_title("Weighted CrossEntropyLoss training 20-10-4 MLP with SHHS-1, Artefacts rejected")
 labels = {"t": "Training",
           "v": "Validation"}
 trainer.plot_loss(ax=ax, labels=labels)
-plt.savefig(f'figures/art_rejection_MLP1_shhs1_{split["train"]}-{split["val"]}-{split["test"]}.png')
+# plt.savefig(f'figures/art_rejection_weighted_cross_MLP1_shhs1_{split["train"]}-{split["val"]}-{split["test"]}.png')
