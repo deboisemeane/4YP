@@ -292,7 +292,7 @@ class SHHSPreprocessor:
         # Construct time domain features
         data = epochs.get_data()
         labels = epochs.metadata["Sleep Stage"]
-        n_epochs, n_samples_per_epoch = data.shape[0], data.shape[2]
+        n_epochs, n_samples_per_epoch = data.shape[0], data.shape[2]-1  # For some reason its returning 3751 instead of 3750
         t_features = []
         t_labels = []
 
@@ -308,11 +308,11 @@ class SHHSPreprocessor:
             if start_idx < 0 or end_idx > n_epochs:
                 continue  # Skip this epoch if too close to edges of recording.
 
-            t_features.append(data[start_idx:end_idx, :, :].flatten())
+            t_features.append(data[start_idx:end_idx, :, 0:-1].flatten())  # For some reason epochs.get_data().shape[2] is 3751 instead of 3750
             t_labels.append(labels[i])
 
         t_features = np.array(t_features)
-        t_labels = np.array(t_labels)
+        t_labels = np.expand_dims(np.array(t_labels), 1)
 
         # Save to dataframe
         dataframe_columns = ([str(sample_no) for sample_no in range(1, 1+n_samples_per_epoch*(1+incl_following_epochs+incl_preceeding_epochs))]
