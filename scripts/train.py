@@ -138,7 +138,8 @@ class Train:
         return optimiser
 
     def train(self, n_epochs, print_losses=True, weight_losses=True):
-
+        # Display data parameters
+        print(f"Data parameters: {self.data_config.params}")
         # Display data split
         print(f"Training with split {self.data_config.params['split']}")
         # Set criterion weight based on inverse of class sizes in the training data.
