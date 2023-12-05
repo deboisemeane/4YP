@@ -26,12 +26,13 @@ class SHHSPreprocessor:
         self.choose_patients()  # Updates demographics DataFrame to only include acceptable examples.
 
     # Generates and saves to csv time domain inputs and labels.
-    def process_t(self, incl_preceeding_epochs: int = 0, incl_following_epochs: int = 0, art_rejection: bool = False):
+    def process_t(self, incl_preceeding_epochs: int = 0, incl_following_epochs: int = 0):
 
         # Check valid number of preceeding and following epochs for each example.
         assert incl_preceeding_epochs >= 0, "Number of preceeding epochs to include with each example must be >= 0"
         assert incl_following_epochs >= 0, "Number of following epochs to include with each example must be >=0"
 
+        art_rejection = self.params["art_rejection"]
         rejections = 0  # We will count the number of recordings rejected due to artefacts.
         for nsrrid in self.demographics["nsrrid"]:
             print(f"Processing nsrrid: {nsrrid}")
@@ -285,7 +286,10 @@ class SHHSPreprocessor:
                                    incl_preceeding_epochs: int, incl_following_epochs: int):
         # Get directory for processed data, create it if it doesn't exist
         data_dir = get_data_dir_shhs(data_type="t", art_rejection=self.params["art_rejection"], lpf=self.params["lpf"])
+        if np.logical_not(os.path.isdir(data_dir)):
+            os.makedirs(data_dir)
 
+        # Construct time domain features
         data = epochs.get_data()
         labels = epochs.metadata["Sleep Stage"]
         n_epochs, n_samples_per_epoch = data.shape[0], data.shape[2]
