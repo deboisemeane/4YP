@@ -47,7 +47,7 @@ class ISRUCConfig(DataConfig):
 
 class SHHSConfig(DataConfig):  # This config class is for frequency feature SHHS datasets.
     def __init__(self, split: dict, data_type: str, art_rejection: bool, lpf: bool = True, resample: dict = None, **kwargs):
-        super().__init__(resample=resample, data_type=data_type, split=split, **kwargs)
+        super().__init__(resample=resample, data_type=data_type, split=split, art_rejection=art_rejection, lpf=lpf, **kwargs)
 
         # Choosing between frequency or time domain data.
         data_dir = get_data_dir_shhs(data_type=data_type, art_rejection=art_rejection, lpf=lpf)
