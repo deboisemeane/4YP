@@ -31,7 +31,7 @@ trainer.test()
 
 # Plotting loss for training with SHHS
 fig, ax = plt.subplots()
-ax.set_title("CrossEntropyLoss training 20-10-4 MLP with SHHS-1, Artefact rejection")
+ax.set_title("CrossEntropyLoss training 20-10-4 MLP with SHHS-1, Artefacts rejected")
 labels = {"t": "Training",
           "v": "Validation"}
 trainer.plot_loss(ax=ax, labels=labels)
