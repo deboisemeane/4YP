@@ -34,6 +34,7 @@ class SHHSPreprocessor:
 
         rejections = 0  # We will count the number of recordings rejected due to artefacts.
         for nsrrid in self.demographics["nsrrid"]:
+            print(f"Processing nsrrid: {nsrrid}")
             raw_eeg = self.load_raw_eeg(self, nsrrid)
             stage = self.load_stage_labels(self, nsrrid, raw_eeg)
 
@@ -264,7 +265,7 @@ class SHHSPreprocessor:
         # Check data_dir is a directory and make one if not
         if np.logical_not(os.path.isdir(data_dir)):
             os.makedirs(data_dir)
-        # Find the examples that has a label (where experts agree) (Boolean Indexing)
+        # Find the examples that has a label (Boolean Indexing)
         label_bool_idx = np.logical_not(epochs.metadata["Sleep Stage"].isna())
         # Select the features for the examples where the two experts agree, using boolean indexing.
         selected_features = features[label_bool_idx, :, :]
@@ -280,9 +281,11 @@ class SHHSPreprocessor:
         return
 
     # Save time domain features and labels to csv
-    @staticmethod
-    def save_t_features_labels_csv(nsrrid, epochs: mne.Epochs,
+    def save_t_features_labels_csv(self, nsrrid, epochs: mne.Epochs,
                                    incl_preceeding_epochs: int, incl_following_epochs: int):
+        # Get directory for processed data, create it if it doesn't exist
+        data_dir = get_data_dir_shhs(data_type="t", art_rejection=self.params["art_rejection"], lpf=self.params["lpf"])
+
         data = epochs.get_data()
         labels = epochs.metadata["Sleep Stage"]
         n_epochs, n_samples_per_epoch = data.shape[0], data.shape[2]
@@ -308,26 +311,9 @@ class SHHSPreprocessor:
         t_labels = np.array(t_labels)
 
         # Save to dataframe
-        dataframe_columns = [str(sample_no) for sample_no in range(1, 1+n_samples_per_epoch)] + ["label"]
+        dataframe_columns = ([str(sample_no) for sample_no in range(1, 1+n_samples_per_epoch*(1+incl_following_epochs+incl_preceeding_epochs))]
+                             + ["label"])
         data = np.concatenate((t_features, t_labels), axis=1)
-        df = pd.DataFrame(data, columns = dataframe_columns)
-        # SHHSConfig_t is dependent on this filename format - be careful changing it.
-        df.to_csv(f"data/Processed/shhs/Time_Features/nsrrid_{nsrrid}.csv")
-
-    # Finds the stage proportions based on the preprocessed data already saved to data/processed/shhs/frequency_features
-    @staticmethod
-    def get_stage_counts(self) -> dict:
-        root_dir = Path(__file__).parent.parent
-        data_dir = root_dir / "data/Processed/shhs/art_rejection_0_lpf_1/"
-        all_filenames = os.listdir(data_dir)
-
-        counts = {"N3": 0, "N1/N2": 0, "REM": 0, "W": 0}
-        enum = enumerate(counts)
-        for i in range(len(counts)):
-            label, stage = next(enum)
-            for file in all_filenames:
-                df = pd.read_csv(data_dir / file)
-                n = sum(df["Label"] == label)
-                counts[stage] += n
-        return counts
+        df = pd.DataFrame(data, columns=dataframe_columns)
+        df.to_csv(data_dir / f"nsrrid_{nsrrid}.csv")
 
