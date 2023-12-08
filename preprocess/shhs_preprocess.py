@@ -193,13 +193,17 @@ class SHHSPreprocessor:
 
     # Return a mne.Epochs object, with stage labels applied as metadata
     def create_epochs(self, raw_eeg: mne.io.Raw, stage: list) -> mne.Epochs:
-        # d.c. detrend around 0
+        # Find sample frequency and length of one sample
+        sf = raw_eeg.info["sfreq"]
+        t_s = 1/sf
+
+        # Apply d.c. detrend around 0
         detrend = 0
         # Stick on sleep stage as metadata.
         metadata = pd.DataFrame({"Sleep Stage": stage})
         # Create events and epochs
         events = mne.make_fixed_length_events(raw_eeg, duration=30)
-        epochs = mne.Epochs(raw_eeg, events, tmin=0, tmax=30,
+        epochs = mne.Epochs(raw_eeg, events, tmin=0, tmax=30-t_s,
                             metadata=metadata, preload=True, detrend=detrend, baseline=None)
         # LPF
         if self.params["lpf"] is True:
@@ -292,7 +296,7 @@ class SHHSPreprocessor:
         # Construct time domain features
         data = epochs.get_data()
         labels = epochs.metadata["Sleep Stage"]
-        n_epochs, n_samples_per_epoch = data.shape[0], data.shape[2]-1  # For some reason its returning 3751 instead of 3750
+        n_epochs, n_samples_per_epoch = data.shape[0], data.shape[2]
         t_features = []
         t_labels = []
 
@@ -308,7 +312,7 @@ class SHHSPreprocessor:
             if start_idx < 0 or end_idx > n_epochs:
                 continue  # Skip this epoch if too close to edges of recording.
 
-            t_features.append(data[start_idx:end_idx, :, 0:-1].flatten())  # For some reason epochs.get_data().shape[2] is 3751 instead of 3750
+            t_features.append(data[start_idx:end_idx, :, :].flatten())
             t_labels.append(labels[i])
 
         t_features = np.array(t_features)
