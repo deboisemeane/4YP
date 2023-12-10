@@ -5,7 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/src" isTestSource="false" />
       <excludeFolder url="file://$MODULE_DIR$/data/Raw" />
     </content>
-    <orderEntry type="jdk" jdkName="test-env" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="FYP" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
 </module>
