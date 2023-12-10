@@ -44,4 +44,4 @@ class BaseDataset(d.Dataset):
                 "label": label}
 
     def __len__(self):  # We have to overwrite the torch.utils.data.Datasets.__len__() method
-            return len(self.data)
+        return len(self.data)
