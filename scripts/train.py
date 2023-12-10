@@ -1,10 +1,11 @@
 import copy
 from src.datasets import ISRUCDataset, SHHSDataset
 from src.models import MLP1
-from utils import calculate_ce_loss, confusion_matrix, accuracy_metrics, get_data_dir_shhs
+from utils import calculate_ce_loss, confusion_matrix, accuracy_metrics, get_data_dir_shhs, Timer
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
+
 
 import os
 from pathlib import Path
@@ -42,7 +43,7 @@ class ISRUCConfig(DataConfig):
         super().__init__(patients=patients, resample=resample, data_type="f", **kwargs)
         # patients : dict containing ISRUC patient numbers for "train", "val", "test" datasets.
         # resample : dict containing resample factors for each class "0", "1", "2", "3"
-            # !!Resampling will only apply to the training dataset!!
+        # !!Resampling should only be applied to the training dataset!!
 
 
 class SHHSConfig(DataConfig):  # This config class is for frequency feature SHHS datasets.
@@ -87,7 +88,7 @@ class Train:
 
     def __init__(self, data_config: DataConfig, optimiser_config: OptimiserConfig,
                  device: torch.device,
-                 model=MLP1, ):
+                 model=MLP1):
 
         # Set the device
         self.device = device if device is not None else torch.device("cpu")
@@ -113,9 +114,12 @@ class Train:
             self.test_dataset = SHHSDataset(nsrrids=self.patients["test"], data_dir=self.data_dir)
 
         # Create DataLoaders
-        self.train_loader = DataLoader(self.train_dataset, batch_size=32, shuffle=True)
-        self.val_loader = DataLoader(self.val_dataset, batch_size=32, shuffle=False)
-        self.test_loader = DataLoader(self.test_dataset, batch_size=32, shuffle=False)
+        batch_size = 64
+        num_workers = 8
+
+        self.train_loader = DataLoader(self.train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+        self.val_loader = DataLoader(self.val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
+        self.test_loader = DataLoader(self.test_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
         # Instantiate the model and optimiser.
         self.optimiser_config = optimiser_config
         self.model = model().to(self.device)
@@ -138,6 +142,9 @@ class Train:
         return optimiser
 
     def train(self, n_epochs, print_losses=True, weight_losses=True):
+        # Set the timer we will use for time measurements
+        timer = Timer()
+
         # Display data parameters
         print(f"Artefact rejection: {self.data_config.params['art_rejection']}")
         print(f"Low-pass filtering: {self.data_config.params['lpf']}")
@@ -163,11 +170,44 @@ class Train:
 
         # Training loop
         for epoch in range(n_epochs):  # Loops over the entire training set
+
+            epoch_timer = Timer()
+            epoch_timer.start()
+
+            computation_time = 0
+            # Train for one epoch
+            running_loss = 0
+            for i, batch in enumerate(self.train_loader):
+
+                x = batch['features'].to(self.device)
+                labels = batch['label'].to(self.device)
+                optimiser.zero_grad()   # Because backpropagation accumulates gradients on weights we need to zero them each step
+
+                # Computation
+                timer.start()
+                y = self.model(x)
+                loss = criterion(y, labels)
+                loss.backward()
+                optimiser.step()
+                computation_time += timer.stop()
+
+                # Add to running loss
+                running_loss += loss * len(batch)  # Scale by batch size so that we can average using length of data loader later.
+
+            loading_time = epoch_timer.stop() - computation_time
+            print(f"Loading time: {loading_time}")
+            print(f"Computation time: {computation_time}")
+
             # Calculate and store the current average training and validation losses
-            train_loss, train_accuracy = calculate_ce_loss(self.model, criterion, self.train_loader, self.device)
+            timer.start()
             val_loss, val_accuracy = calculate_ce_loss(self.model, criterion, self.val_loader, self.device)
+            loss_time_v = timer.stop()
+
+            train_loss = running_loss / self.train_loader.__len__()
             TL.append(train_loss)
             VL.append(val_loss)
+
+            print(f"Validation loss calculation time: {loss_time_v}")
 
             # Check if this is our best performing model so far
             if val_loss < best_val_loss:
@@ -176,24 +216,10 @@ class Train:
 
             # Print the current average losses
             if print_losses is True:
-                print(f"Epoch: [{epoch}/{n_epochs}], Average Training Loss: [{train_loss}]")
-                print(f"Epoch: [{epoch}/{n_epochs}], Validation Loss: [{val_loss}], Validation Accuracy: [{val_accuracy}]")
+                print(f"Epoch: [{epoch+1}/{n_epochs}], Average Training Loss during this epoch: [{train_loss}]")
+                print(f"Epoch: [{epoch+1}/{n_epochs}], Validation Loss: [{val_loss}], Validation Accuracy: [{val_accuracy}]")
 
-            # Train for one epoch
-            for i, batch in enumerate(self.train_loader):
-                x = batch['features'].to(self.device)
-                labels = batch['label'].to(self.device)
-                optimiser.zero_grad()   # Because backpropagation accumulates gradients on weights we need to zero them each step.
-                y = self.model(x)
-                loss = criterion(y, labels)
-                loss.backward()
-                optimiser.step()
-
-        # Calculate and store the losses after the final epoch
-        train_loss, train_accuracy = calculate_ce_loss(self.model, criterion, self.train_loader, self.device)
-        val_loss, val_accuracy = calculate_ce_loss(self.model, criterion, self.val_loader, self.device)
-        TL.append(train_loss)
-        VL.append(val_loss)
+        # Store the losses
         self.VL = VL
         self.TL = TL
 
