@@ -5,7 +5,7 @@ import torch
 import numpy as np
 
 
-# Custom dataset for handcrafted frequency features.
+# Custom dataset for getting SHHS EEG data.
 class SHHSDataset(BaseDataset):
 
     def __init__(self, nsrrids: list[int], data_dir: str, resample=None):
