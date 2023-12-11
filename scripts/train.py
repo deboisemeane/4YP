@@ -176,7 +176,8 @@ class Train:
 
             computation_time = 0
             # Train for one epoch
-            running_loss = 0
+            running_loss = 0.0
+            total_samples = 0
             for i, batch in enumerate(self.train_loader):
 
                 x = batch['features'].to(self.device)
@@ -192,7 +193,8 @@ class Train:
                 computation_time += timer.stop()
 
                 # Add to running loss
-                running_loss += loss * len(batch)  # Scale by batch size so that we can average using length of data loader later.
+                running_loss += loss * x.size(0)  # Scale by batch size so that we can average using length of data loader later.
+                total_samples += x.size(0)
 
             loading_time = epoch_timer.stop() - computation_time
             print(f"Loading time: {loading_time}")
@@ -203,7 +205,7 @@ class Train:
             val_loss, val_accuracy = calculate_ce_loss(self.model, criterion, self.val_loader, self.device)
             loss_time_v = timer.stop()
 
-            train_loss = running_loss / self.train_loader.__len__()
+            train_loss = running_loss / total_samples
             TL.append(train_loss)
             VL.append(val_loss)
 
