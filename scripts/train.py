@@ -1,5 +1,5 @@
 import copy
-from src.datasets import ISRUCDataset, SHHSDataset
+from src.datasets import ISRUCDataset, SHHSDataset_new, SHHSDataset
 from src.models import MLP1
 from utils import calculate_ce_loss, confusion_matrix, accuracy_metrics, get_data_dir_shhs, Timer
 import torch
@@ -109,9 +109,9 @@ class Train:
             self.test_dataset = ISRUCDataset(patients=self.patients["test"])
 
         elif isinstance(data_config, SHHSConfig):
-            self.train_dataset = SHHSDataset(nsrrids=self.patients["train"], data_dir=self.data_dir, resample=self.resample)
-            self.val_dataset = SHHSDataset(nsrrids=self.patients["val"], data_dir=self.data_dir)
-            self.test_dataset = SHHSDataset(nsrrids=self.patients["test"], data_dir=self.data_dir)
+            self.train_dataset = SHHSDataset_new(nsrrids=self.patients["train"], data_dir=self.data_dir, resample=self.resample)
+            self.val_dataset = SHHSDataset_new(nsrrids=self.patients["val"], data_dir=self.data_dir)
+            self.test_dataset = SHHSDataset_new(nsrrids=self.patients["test"], data_dir=self.data_dir)
 
         # Create DataLoaders
         batch_size = 64
