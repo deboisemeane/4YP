@@ -13,7 +13,19 @@ class SHHSDataset_new:
         self.nsrrids = nsrrids
         self.data_dir = data_dir
         self.index_df = self.__create_index_df__()
-        # Ignore resampling for now
+
+        # Find label counts and then class weights (inversely proportional) to be provided to loss criterion.
+        classes = [0, 1, 2, 3]
+        label_counts = np.zeros(4)
+        for i in classes:
+            label_counts[i] = (self.index_df["labels"] == float(i)).sum()
+        self.label_counts = label_counts
+
+        total_count = len(self.index_df["labels"])
+        weight = total_count / label_counts
+        weight = weight / weight.sum()  # Normalise weights
+        weight = torch.tensor(weight).float()
+        self.weight = weight
 
     # Creates an index dataframe which specifies the nsrrid (and therefore filename),
     # and row number within that file of a training example.
