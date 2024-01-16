@@ -63,6 +63,8 @@ class SHHSDataset_new:
         # Convert to tensors
         label = torch.tensor(label, dtype=torch.long)  # CrossEntropyLoss expects integer type
         features = torch.tensor(features.values, dtype=torch.float32)
+        features = features.unsqueeze(0)  # Conv1D expects shape [batchsize, n_channels, data_length].
+                                          # If I don't specify n_channels=1, it will think the batch size is 1 and the n_channels is 64.
         return {"features": features, "label": label}
 
     def __len__(self):
