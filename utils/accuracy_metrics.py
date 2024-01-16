@@ -1,8 +1,6 @@
 import numpy as np
 
 
-import numpy as np
-
 def accuracy_metrics(confusion_matrix):
     FP = confusion_matrix.sum(axis=0) - np.diag(confusion_matrix)  # False Positives
     FN = confusion_matrix.sum(axis=1) - np.diag(confusion_matrix)  # False Negatives
