@@ -14,7 +14,7 @@ def main():
     # Training the MLP on SHHS data
     #split = {"train": 350, "val": 100, "test": 50}
     #split = {"train": 1950, "val": 557, "test": 278}
-    split = {"train": 7, "val": 2, "test": 1}
+    split = {"train": 1, "val": 1, "test": 1}
     #resample = {"2": 2.84}
 
     data_config = SHHSConfig(split=split, data_type="t", art_rejection=True, lpf=False, resample=None)
