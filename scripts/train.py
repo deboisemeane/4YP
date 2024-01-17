@@ -115,7 +115,7 @@ class Train:
 
         # Create DataLoaders
         batch_size = 64
-        num_workers = 8
+        num_workers = 2
 
         self.train_loader = DataLoader(self.train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
         self.val_loader = DataLoader(self.val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
