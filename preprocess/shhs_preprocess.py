@@ -25,7 +25,7 @@ class SHHSPreprocessor:
         self.demographics = pd.read_csv('data/Raw/shhs/datasets/shhs-harmonized-dataset-0.20.0.csv')
         self.choose_patients()  # Updates demographics DataFrame to only include acceptable examples.
 
-    # Generates and saves to csv time domain inputs and labels.
+    # Generates and saves to npy time domain inputs and labels.
     def process_t(self, incl_preceeding_epochs: int = 0, incl_following_epochs: int = 0):
 
         # Check valid number of preceeding and following epochs for each example.
@@ -48,8 +48,8 @@ class SHHSPreprocessor:
 
             # Low pass filter and create mne.Epochs object with stage label metadata.
             epochs = self.create_epochs(raw_eeg, stage)
-            # Save the time features to csv
-            self.save_t_features_labels_csv(nsrrid, epochs, incl_preceeding_epochs=incl_preceeding_epochs,
+            # Save the time features to npy
+            self.save_t_features_labels_npy(nsrrid, epochs, incl_preceeding_epochs=incl_preceeding_epochs,
                                             incl_following_epochs=incl_following_epochs)
             if art_rejection is True:
                 print(f"{rejections} recordings rejected due to >2% of epochs being artefacts.")
@@ -286,7 +286,7 @@ class SHHSPreprocessor:
         return
 
     # Save time domain features and labels to csv
-    def save_t_features_labels_csv(self, nsrrid, epochs: mne.Epochs,
+    def save_t_features_labels_npy(self, nsrrid, epochs: mne.Epochs,
                                    incl_preceeding_epochs: int, incl_following_epochs: int):
         # Get directory for processed data, create it if it doesn't exist
         data_dir = get_data_dir_shhs(data_type="t", art_rejection=self.params["art_rejection"], lpf=self.params["lpf"])
@@ -319,9 +319,10 @@ class SHHSPreprocessor:
         t_labels = np.expand_dims(np.array(t_labels), 1)
 
         # Save to dataframe
-        dataframe_columns = ([str(sample_no) for sample_no in range(1, 1+n_samples_per_epoch*(1+incl_following_epochs+incl_preceeding_epochs))]
-                             + ["label"])
         data = np.concatenate((t_features, t_labels), axis=1)
-        df = pd.DataFrame(data, columns=dataframe_columns)
-        df.to_csv(data_dir / f"nsrrid_{nsrrid}.csv")
+        data = np.float32(data)     # Float32 takes less space compared to float64
+        np.save(file=data_dir/f"nsrrid_{nsrrid}",
+                arr=data,
+                allow_pickle=False)    # npy is more space and read efficient than csv
+
 
