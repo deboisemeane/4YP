@@ -120,7 +120,7 @@ class Train:
 
         # Create DataLoaders
         batch_size = 64
-        num_workers = 2
+        num_workers = 4
 
         self.train_loader = DataLoader(self.train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
         self.val_loader = DataLoader(self.val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
@@ -210,7 +210,7 @@ class Train:
             val_loss, val_accuracy = calculate_ce_loss(self.model, criterion, self.val_loader, self.device)
             loss_time_v = timer.stop()
 
-            train_loss = running_loss / total_samples
+            train_loss = float(running_loss / total_samples)
             TL.append(train_loss)
             VL.append(val_loss)
 
