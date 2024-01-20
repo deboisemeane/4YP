@@ -6,7 +6,7 @@ import numpy as np
 
 
 # Custom dataset for getting SHHS EEG data.
-class SHHSDataset(BaseDataset):
+class SHHSDataset_f(BaseDataset):
 
     def __init__(self, nsrrids: list[int], data_dir: str, resample=None):
         data = []

@@ -1,5 +1,5 @@
 import copy
-from src.datasets import ISRUCDataset, SHHSDataset_new, SHHSDataset
+from src.datasets import ISRUCDataset, SHHSDataset_t, SHHSDataset_f
 from src.models import MLP1
 from utils import calculate_ce_loss, confusion_matrix, accuracy_metrics, get_data_dir_shhs, Timer
 import torch
@@ -53,7 +53,7 @@ class SHHSConfig(DataConfig):  # This config class is for frequency feature SHHS
         # Choosing between frequency or time domain data.
         data_dir = get_data_dir_shhs(data_type=data_type, art_rejection=art_rejection, lpf=lpf)
 
-        # Read all CSV filenames and extract nsrrids
+        # Read all filenames and extract nsrrids
         all_filenames = os.listdir(data_dir)
         all_nsrrids = [filename.split('.')[0][7::] for filename in all_filenames]
 
@@ -96,8 +96,8 @@ class Train:
         # Get dataset parameters from data_config
         self.data_config = data_config
         self.patients = data_config.params["patients"]
-        self.resample = data_config.params["resample"]
         self.data_type = data_config.params["data_type"]
+        self.resample = data_config.params["resample"] if self.data_type == "f" else None
         self.art_rejection = data_config.params["art_rejection"]
         self.lpf = data_config.params["lpf"]
         self.data_dir = get_data_dir_shhs(self.data_type, self.art_rejection, self.lpf)
@@ -108,10 +108,15 @@ class Train:
             self.val_dataset = ISRUCDataset(patients=self.patients["val"])
             self.test_dataset = ISRUCDataset(patients=self.patients["test"])
 
-        elif isinstance(data_config, SHHSConfig):
-            self.train_dataset = SHHSDataset_new(nsrrids=self.patients["train"], data_dir=self.data_dir, resample=self.resample)
-            self.val_dataset = SHHSDataset_new(nsrrids=self.patients["val"], data_dir=self.data_dir)
-            self.test_dataset = SHHSDataset_new(nsrrids=self.patients["test"], data_dir=self.data_dir)
+        elif isinstance(data_config, SHHSConfig) and self.data_type == "t":
+            self.train_dataset = SHHSDataset_t(nsrrids=self.patients["train"], data_dir=self.data_dir)
+            self.val_dataset = SHHSDataset_t(nsrrids=self.patients["val"], data_dir=self.data_dir)
+            self.test_dataset = SHHSDataset_t(nsrrids=self.patients["test"], data_dir=self.data_dir)
+
+        elif isinstance(data_config, SHHSConfig) and self.data_type == "f":
+            self.train_dataset = SHHSDataset_f(nsrrids=self.patients["train"], data_dir=self.data_dir, resample=self.resample)
+            self.val_dataset = SHHSDataset_f(nsrrids=self.patients["val"], data_dir=self.data_dir)
+            self.test_dataset = SHHSDataset_f(nsrrids=self.patients["test"], data_dir=self.data_dir)
 
         # Create DataLoaders
         batch_size = 64
