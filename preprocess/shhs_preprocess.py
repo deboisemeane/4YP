@@ -321,8 +321,8 @@ class SHHSPreprocessor:
         # Save to dataframe
         data = np.concatenate((t_features, t_labels), axis=1)
         data = np.float32(data)     # Float32 takes less space compared to float64
-        #np.save(file=data_dir/f"nsrrid_{nsrrid}",
-        #        arr=data,
-         #       allow_pickle=False)    # npy is more space and read efficient than csv
+        np.save(file=data_dir/f"nsrrid_{nsrrid}",
+                arr=data,
+                allow_pickle=False)    # npy is more space and read efficient than csv
 
 
