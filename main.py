@@ -24,7 +24,7 @@ def main():
 
     timer = Timer()
     timer.start()
-    trainer.train(n_epochs=1, print_losses=True, weight_losses=True)
+    trainer.train(n_epochs=50, print_losses=True, weight_losses=True)
     time_train = timer.stop()
     print(f"Total training time: {time_train}")
 
@@ -33,7 +33,7 @@ def main():
 
     # Plotting loss for training with SHHS
     fig, ax = plt.subplots()
-    ax.set_title("Training CNN with LPF time-series EEG")
+    ax.set_title("Training CNN with time-series EEG")
     labels = {"t": "Training", "v": "Validation"}
     trainer.plot_loss(ax=ax, labels=labels)
     plt.savefig(f'figures/art_rejection_weighted_cross_CNN_shhs1_{split["train"]}-{split["val"]}-{split["test"]}.png')
