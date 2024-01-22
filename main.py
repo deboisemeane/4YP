@@ -24,7 +24,7 @@ def main():
 
     timer = Timer()
     timer.start()
-    trainer.train(n_epochs=5, print_losses=True, weight_losses=True)
+    #trainer.train(n_epochs=5, print_losses=True, weight_losses=True)
     time_train = timer.stop()
     print(f"Total training time: {time_train}")
 
