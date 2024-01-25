@@ -39,7 +39,7 @@ class AFNet_wip(nn.Module):
         
     #Defines the behaviour of a forward pass on an input
     def forward(self, x):
-        R = nn.ReLU
+        R = nn.ReLU()
         #The convolutional layers
         x = R(self.conv1(x))
         x = R(self.conv2(x))
