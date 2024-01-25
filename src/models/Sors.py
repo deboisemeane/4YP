@@ -8,6 +8,8 @@ class Sors(nn.Module):
 
     def __init__(self):
         super(Sors, self).__init__()
+
+        # Convolution layers
         padding7 = 3
         padding5 = 2
         padding3 = 1
@@ -27,20 +29,25 @@ class Sors(nn.Module):
         self.fc1 = nn.Linear(768, 100)
         self.fc2 = nn.Linear(100, 4)
 
+        # Batch Normalisation
+        self.norm1 = nn.BatchNorm1d(1)
+        self.norm128 = nn.BatchNorm1d(128)
+        self.norm256 = nn.BatchNorm1d(256)
+
     def forward(self, x):
         R = nn.LeakyReLU(0.1)
-        x = R(self.conv1(x))
-        x = R(self.conv2(x))
-        x = R(self.conv3(x))
-        x = R(self.conv4(x))
-        x = R(self.conv5(x))
-        x = R(self.conv6(x))
-        x = R(self.conv7(x))
-        x = R(self.conv8(x))
-        x = R(self.conv9(x))
-        x = R(self.conv10(x))
-        x = R(self.conv11(x))
-        x = R(self.conv12(x))
+        x = R(self.norm128(self.conv1(self.norm1(x))))
+        x = R(self.norm128(self.conv2(x)))
+        x = R(self.norm128(self.conv3(x)))
+        x = R(self.norm128(self.conv4(x)))
+        x = R(self.norm128(self.conv5(x)))
+        x = R(self.norm128(self.conv6(x)))
+        x = R(self.norm256(self.conv7(x)))
+        x = R(self.norm256(self.conv8(x)))
+        x = R(self.norm256(self.conv9(x)))
+        x = R(self.norm256(self.conv10(x)))
+        x = R(self.norm256(self.conv11(x)))
+        x = R(self.norm256(self.conv12(x)))
         x = torch.flatten(x, start_dim=1)  # Start at dim1 such that the batch dimension is preserved.
         x = R(self.fc1(x))
         x = self.fc2(x)
