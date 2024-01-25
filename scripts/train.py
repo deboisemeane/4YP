@@ -131,7 +131,7 @@ class Train:
         self.optimiser = self.__create_optimiser__(optimiser_config)
 
         # Initialise other attributes.
-        self.best_model_state = None  # Dict that can be loaded to get the model with the lowest validation loss
+        self.best_model_state = copy.deepcopy(self.model.state_dict())  # Dict that can be loaded to get the model with the lowest validation loss
         self.VL = None  # Training loss after each epoch for the whole training process
         self.TL = None  # Validation loss after each epoch for the whole training process
         self.confusion = None  # Confusion matrix for performance evaluation
