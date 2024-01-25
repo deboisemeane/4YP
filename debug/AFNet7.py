@@ -8,7 +8,6 @@ Class for implementing a 7-layer CNN as described in Vogt et al. 2018.
 @author: shaun
 """
 
-import Physionet2017 as Phys
 import torch
 import torch.nn as nn
 import torch.nn.functional as f
@@ -73,12 +72,4 @@ class AFNet(nn.Module):
         #x = f.log_softmax(x, dim=1)
 
         return x
-    
-if __name__ == '__main__':
-    dataset = Phys.Physionet2017("./", False, 16, True, False, False)
-    net = AFNet()
-    
-    for data in dataset:
-        records, labels = data
-        test_result = net(records)
-        break
+
