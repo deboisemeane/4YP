@@ -1,1 +1,1 @@
-from AFNet7 import AFNet
+from .AFNet7 import AFNet
