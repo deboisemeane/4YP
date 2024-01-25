@@ -8,19 +8,23 @@ class Sors(nn.Module):
 
     def __init__(self):
         super(Sors, self).__init__()
-        self.conv1 = nn.Conv1d(1, 128, 7, 2)
-        self.conv2 = nn.Conv1d(128, 128, 7, 2)
-        self.conv3 = nn.Conv1d(128, 128, 7, 2)
-        self.conv4 = nn.Conv1d(128, 128, 7, 2)
-        self.conv5 = nn.Conv1d(128, 128, 7, 2)
-        self.conv6 = nn.Conv1d(128, 128, 7, 2)
-        self.conv7 = nn.Conv1d(128, 256, 7, 2)
-        self.conv8 = nn.Conv1d(256, 256, 5, 2)
-        self.conv9 = nn.Conv1d(256, 256, 5, 2)
-        self.conv10 = nn.Conv1d(256, 256, 5, 2)
-        self.conv11 = nn.Conv1d(256, 256, 3, 2)
+        padding7 = 3
+        padding5 = 2
+        padding3 = 1
+
+        self.conv1 = nn.Conv1d(1, 128, 7, 2, padding=padding7)
+        self.conv2 = nn.Conv1d(128, 128, 7, 2, padding=padding7)
+        self.conv3 = nn.Conv1d(128, 128, 7, 2, padding=padding7)
+        self.conv4 = nn.Conv1d(128, 128, 7, 2, padding=padding5)
+        self.conv5 = nn.Conv1d(128, 128, 7, 2, padding=padding5)
+        self.conv6 = nn.Conv1d(128, 128, 7, 2, padding=padding7)
+        self.conv7 = nn.Conv1d(128, 256, 7, 2, padding=padding7)
+        self.conv8 = nn.Conv1d(256, 256, 5, 2, padding=padding5)
+        self.conv9 = nn.Conv1d(256, 256, 5, 2, padding=padding5)
+        self.conv10 = nn.Conv1d(256, 256, 5, 2, padding=padding3)
+        self.conv11 = nn.Conv1d(256, 256, 3, 2, padding=padding3)
         self.conv12 = nn.Conv1d(256, 256, 3, 2)
-        self.fc1 = nn.Linear(512, 100)
+        self.fc1 = nn.Linear(768, 100)
         self.fc2 = nn.Linear(100, 4)
 
     def forward(self, x):
