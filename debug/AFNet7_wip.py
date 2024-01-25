@@ -30,6 +30,14 @@ class AFNet_wip(nn.Module):
         self.fc1 = nn.Linear(3712, 128)
         self.fc2 = nn.Linear(128, 4)
 
+        self.norm0 = nn.BatchNorm1d(1)
+        self.norm1 = nn.BatchNorm1d(16)
+        self.norm2 = nn.BatchNorm1d(32)
+        self.norm3 = nn.BatchNorm1d(32)
+        self.norm4 = nn.BatchNorm1d(64)
+        self.norm5 = nn.BatchNorm1d(64)
+        self.norm6 = nn.BatchNorm1d(128)
+        self.norm7 = nn.BatchNorm1d(128)
         # Defines the behaviour of a forward pass on an input
 
     def forward(self, x):
@@ -37,13 +45,13 @@ class AFNet_wip(nn.Module):
         x = torch.nn.functional.pad(input=x, pad=(0, 3300), value=0)
 
         # The convolutional layers
-        x = f.relu((self.conv1(x)))
-        x = (f.relu((self.conv2(x))))
-        x = (f.relu((self.conv3(x))))
-        x = (f.relu((self.conv4(x))))
-        x = (f.relu((self.conv5(x))))
-        x = (f.relu((self.conv6(x))))
-        x = f.relu((self.conv7(x)))
+        x = f.relu(self.norm1(self.conv1(self.norm0(x))))
+        x = (f.relu(self.norm2(self.conv2(x))))
+        x = (f.relu(self.norm3(self.conv3(x))))
+        x = (f.relu(self.norm4(self.conv4(x))))
+        x = (f.relu(self.norm5(self.conv5(x))))
+        x = (f.relu(self.norm6(self.conv6(x))))
+        x = f.relu(self.norm7(self.conv7(x)))
 
         # Global max pooling and fully connected layer for classification
         x = torch.flatten(x, start_dim=1)
