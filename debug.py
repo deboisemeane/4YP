@@ -3,7 +3,7 @@ from scripts import Train, AdamConfig, SHHSConfig
 from src.models import MLP1, Sors
 import matplotlib.pyplot as plt
 from utils import Timer
-from debug import AFNet
+from debug import AFNet, AFNet_wip
 
 def main():
     # Find device
@@ -20,7 +20,7 @@ def main():
     data_config = SHHSConfig(split=split, data_type="t", art_rejection=True, lpf=False, resample=None)
     optimiser_config = AdamConfig(lr=0.0001)
 
-    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=AFNet, device=device)
+    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=AFNet_wip, device=device)
 
     timer = Timer()
     timer.start()
