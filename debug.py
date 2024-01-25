@@ -3,7 +3,7 @@ from scripts import Train, AdamConfig, SHHSConfig
 from src.models import MLP1, Sors
 import matplotlib.pyplot as plt
 from utils import Timer
-from AFNet7 import AFNet
+from debug import AFNet
 
 def main():
     # Find device
