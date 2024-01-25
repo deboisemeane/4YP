@@ -36,7 +36,7 @@ def main():
     ax.set_title("Training CNN-12")
     labels = {"t": "Training", "v": "Validation"}
     trainer.plot_loss(ax=ax, labels=labels)
-    plt.savefig(f'figures/art_rejection_weighted_cross_CNN_shhs1_{split["train"]}-{split["val"]}-{split["test"]}.png')
+    plt.savefig(f'figures/artrejection1_lpf1_weighted1_CNN12_shhs1_{split["train"]}-{split["val"]}-{split["test"]}.png')
 
 
 if __name__ == '__main__':
