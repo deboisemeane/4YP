@@ -18,13 +18,13 @@ def main():
     #resample = {"2": 2.84}
 
     data_config = SHHSConfig(split=split, data_type="t", art_rejection=True, lpf=True, resample=None)
-    optimiser_config = AdamConfig(lr=0.00003)
+    optimiser_config = AdamConfig(lr=0.0001)
 
     trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors, device=device)
 
     timer = Timer()
     timer.start()
-    trainer.train(n_epochs=2, print_losses=True, weight_losses=True)
+    trainer.train(n_epochs=24, print_losses=True, weight_losses=True)
     time_train = timer.stop()
     print(f"Total training time: {time_train}")
 
