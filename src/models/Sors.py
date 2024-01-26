@@ -30,7 +30,7 @@ class Sors(nn.Module):
         self.fc2 = nn.Linear(100, 4)
 
         # Batch Normalisation
-        self.norm0 = nn.BatchNorm1d(128)
+        self.norm0 = nn.BatchNorm1d(1)
         self.norm1 = nn.BatchNorm1d(128)
         self.norm2 = nn.BatchNorm1d(128)
         self.norm3 = nn.BatchNorm1d(128)
