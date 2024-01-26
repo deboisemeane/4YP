@@ -20,7 +20,7 @@ def main():
     data_config = SHHSConfig(split=split, data_type="t", art_rejection=True, lpf=False, resample=None)
     optimiser_config = AdamConfig(lr=0.0001)
 
-    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=AFNet_wip, device=device)
+    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors, device=device)
 
     timer = Timer()
     timer.start()
