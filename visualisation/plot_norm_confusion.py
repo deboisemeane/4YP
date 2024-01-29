@@ -22,7 +22,15 @@ def plot_norm_confusion(confusion, title):
     for i in range(len(ticks)):
         for j in range(len(ticks)):
             text = ax.text(j, i, np.round(norm_confusion[i, j], decimals=2),
-                           ha="center", va="center", color="w")
+                           ha="center", va="center", color=str(1-norm_confusion[i, j]))
 
     ax.set_title(title)
     plt.show()
+
+
+if __name__ == '__main__':
+    confusion = np.array([[37921, 922, 62, 149],
+                          [16902, 85477, 6744, 14020],
+                          [201, 1216, 35449, 5855],
+                          [916, 1146, 728, 73304]])
+    plot_norm_confusion(confusion, "")
