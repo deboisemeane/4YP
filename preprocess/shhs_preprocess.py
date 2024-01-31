@@ -285,7 +285,7 @@ class SHHSPreprocessor:
         df.to_csv(data_dir / f"nsrrid_{nsrrid}.csv")
         return
 
-    # Save time domain features and labels to csv
+    # Save time domain features and labels to npy
     def save_t_features_labels_npy(self, nsrrid, epochs: mne.Epochs,
                                    incl_preceeding_epochs: int, incl_following_epochs: int):
         # Get directory for processed data, create it if it doesn't exist
