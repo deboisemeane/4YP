@@ -45,13 +45,10 @@ class AFNet(nn.Module):
         
         self.fc1 = nn.Linear(128, 4)
         
-    #Defines the behaviour of a forward pass on an input
+    # Defines the behaviour of a forward pass on an input
     def forward(self, x):
 
-        # Alex's zero padding to make 15000 into 18300
-        x = torch.nn.functional.pad(input=x, pad=(0, 3300), value=0)
-
-        #The convolutional layers
+        # The convolutional layers
         x = f.relu(self.norm1(self.conv1(self.norm0(x))))
         x = self.drop2(f.relu(self.norm2(self.conv2(x))))
         x = self.pool(x)
@@ -73,3 +70,9 @@ class AFNet(nn.Module):
 
         return x
 
+
+if __name__ == '__main__':
+    x = torch.zeros((64,1,15000))
+    model = AFNet()
+    y = model(x)
+    print(y.shape)
