@@ -156,6 +156,7 @@ class Train:
         print(f"Resample: {self.data_config.params['resample']}")
         # Display data split
         print(f"Training with split {self.data_config.params['split']}")
+        print(f"Model being used: {self.model}")
         # Set criterion weight based on inverse of class sizes in the training data.
         weight = self.train_dataset.weight.to(self.device) if weight_losses is True else None
         print(f"Class counts in training data: {self.train_dataset.label_counts}")
