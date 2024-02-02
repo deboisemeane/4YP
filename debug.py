@@ -36,7 +36,7 @@ def main():
     ax.set_title("Training CNN with time-series EEG")
     labels = {"t": "Training", "v": "Validation"}
     trainer.plot_loss(ax=ax, labels=labels)
-    plt.savefig(f'figures/art_rejection1_lpf1_lossweighting0_AFNet_shhs1_{split["train"]}-{split["val"]}-{split["test"]}.png')
+    plt.savefig(f'figures/art_rejection1_lpf1_lossweighting0_AFNet_avgpool_shhs1_{split["train"]}-{split["val"]}-{split["test"]}.png')
 
 
 if __name__ == '__main__':
