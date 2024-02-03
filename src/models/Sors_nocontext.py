@@ -7,7 +7,7 @@ import torch.nn as nn
 class Sors_nocontext(nn.Module):
 
     def __init__(self):
-        super(Sors, self).__init__()
+        super(Sors_nocontext, self).__init__()
 
         # Convolution layers
         padding7 = 3
@@ -69,5 +69,5 @@ if __name__ == '__main__':
     import numpy as np
     x_test = np.zeros((64, 1, 3750))
     x_test = torch.tensor(x_test, dtype=torch.float32)
-    model = Sors()
+    model = Sors_nocontext()
     print(model(x_test).shape)
