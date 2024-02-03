@@ -289,7 +289,8 @@ class SHHSPreprocessor:
     def save_t_features_labels_npy(self, nsrrid, epochs: mne.Epochs,
                                    incl_preceeding_epochs: int, incl_following_epochs: int):
         # Get directory for processed data, create it if it doesn't exist
-        data_dir = get_data_dir_shhs(data_type="t", art_rejection=self.params["art_rejection"], lpf=self.params["lpf"])
+        data_dir = get_data_dir_shhs(data_type="t", art_rejection=self.params["art_rejection"], lpf=self.params["lpf"],
+                                     prec_epochs=incl_preceeding_epochs, foll_epochs=incl_following_epochs)
         if np.logical_not(os.path.isdir(data_dir)):
             os.makedirs(data_dir)
 
