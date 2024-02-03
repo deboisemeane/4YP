@@ -47,11 +47,14 @@ class ISRUCConfig(DataConfig):
 
 
 class SHHSConfig(DataConfig):  # This config class is for frequency feature SHHS datasets.
-    def __init__(self, split: dict, data_type: str, art_rejection: bool, lpf: bool = True, resample: dict = None, **kwargs):
-        super().__init__(resample=resample, data_type=data_type, split=split, art_rejection=art_rejection, lpf=lpf, **kwargs)
+    def __init__(self, split: dict, data_type: str, art_rejection: bool, prec_epochs: int, foll_epochs: int,
+                 lpf: bool = True, resample: dict = None, **kwargs):
+        super().__init__(resample=resample, data_type=data_type, split=split, art_rejection=art_rejection, lpf=lpf,
+                         prec_epochs=prec_epochs, foll_epochs=foll_epochs, **kwargs)
 
         # Choosing between frequency or time domain data.
-        data_dir = get_data_dir_shhs(data_type=data_type, art_rejection=art_rejection, lpf=lpf)
+        data_dir = get_data_dir_shhs(data_type=data_type, art_rejection=art_rejection, lpf=lpf, prec_epochs=prec_epochs,
+                                     foll_epochs=foll_epochs)
 
         # Read all filenames and extract nsrrids
         all_filenames = os.listdir(data_dir)
@@ -100,7 +103,9 @@ class Train:
         self.resample = data_config.params["resample"] if self.data_type == "f" else None
         self.art_rejection = data_config.params["art_rejection"]
         self.lpf = data_config.params["lpf"]
-        self.data_dir = get_data_dir_shhs(self.data_type, self.art_rejection, self.lpf)
+        self.prec_epochs = data_config.params["prec_epochs"]
+        self.foll_epochs = data_config.params["foll_epochs"]
+        self.data_dir = get_data_dir_shhs(self.data_type, self.art_rejection, self.lpf, self.prec_epochs, self.foll_epochs)
 
         # Define train, val, test datasets.
         if isinstance(data_config, ISRUCConfig):
