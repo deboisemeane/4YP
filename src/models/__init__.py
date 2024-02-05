@@ -1,4 +1,5 @@
 from .MLP import MLP1, MLP2
 from .Sors import Sors
 from .Sors7 import Sors7
-from .Sors_nocontext import Sors_nocontext
+from .Sors_nocontext1 import Sors_nocontext1
+from .Sors_nocontext2 import Sors_nocontext2

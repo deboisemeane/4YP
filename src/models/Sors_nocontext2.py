@@ -4,18 +4,18 @@ import torch.nn as nn
 
 # This implements a modified version of the model used by Sors et al.
 # It is designed to take feature length 3750 which corresponds to one 30s epoch at 125Hz, i.e. without surrounding context.
-class Sors_nocontext(nn.Module):
+class Sors_nocontext2(nn.Module):
 
     def __init__(self):
-        super(Sors_nocontext, self).__init__()
+        super(Sors_nocontext2, self).__init__()
 
         # Convolution layers
         padding7 = 3
         padding5 = 2
         padding3 = 1
 
-        self.conv1 = nn.Conv1d(1, 128, 7, 1, padding=padding7)
-        self.conv2 = nn.Conv1d(128, 128, 7, 1, padding=padding7)
+        self.conv1 = nn.Conv1d(1, 128, 7, 2, padding=padding7)
+        self.conv2 = nn.Conv1d(128, 128, 7, 2, padding=padding7)
         self.conv3 = nn.Conv1d(128, 128, 7, 2, padding=padding7)
         self.conv4 = nn.Conv1d(128, 128, 7, 2, padding=padding5)
         self.conv5 = nn.Conv1d(128, 128, 7, 2, padding=padding5)
@@ -24,8 +24,8 @@ class Sors_nocontext(nn.Module):
         self.conv8 = nn.Conv1d(256, 256, 5, 2, padding=padding5)
         self.conv9 = nn.Conv1d(256, 256, 5, 2, padding=padding5)
         self.conv10 = nn.Conv1d(256, 256, 5, 2, padding=padding3)
-        self.conv11 = nn.Conv1d(256, 256, 3, 2, padding=padding3)
-        self.conv12 = nn.Conv1d(256, 256, 3, 2)
+        self.conv11 = nn.Conv1d(256, 256, 3, 1, padding=padding3)
+        self.conv12 = nn.Conv1d(256, 256, 3, 1, padding=padding3)
         self.fc1 = nn.Linear(768, 100)
         self.fc2 = nn.Linear(100, 4)
 
@@ -69,5 +69,5 @@ if __name__ == '__main__':
     import numpy as np
     x_test = np.zeros((64, 1, 3750))
     x_test = torch.tensor(x_test, dtype=torch.float32)
-    model = Sors_nocontext()
+    model = Sors_nocontext2()
     print(model(x_test).shape)
