@@ -2,6 +2,7 @@ import mne
 import os
 import numpy as np
 import pandas as pd
+import scipy
 import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -44,14 +45,6 @@ class SHHSCardioPreprocessor:
         df = df.reset_index(drop=True)
         df = df.drop(unavailable_edf_indeces, axis='index')
         self.demographics = df
-
-    @staticmethod
-    def load_mne_raw(self, nsrrid):
-        edfs_dir = 'data/Raw/shhs/polysomnography/edfs/shhs1/'
-        patient_path = edfs_dir+"shhs1-"+str(nsrrid)+".edf"
-        channel = ["THOR RES", "ECG", "H.R.", "POSITION"]
-        raw = mne.io.read_raw_edf(patient_path, include=channel)
-        return raw
 
     # Function to give a new start and end time based on equipment disconnections.
     # If there is equipment disconnect >5 minutes long, not at the start or end, then the whole recording is thown out.
@@ -160,11 +153,12 @@ class SHHSCardioPreprocessor:
             self.epochs_removed.append(epochs_removed)
         return t_start, t_end
 
-    def process(self, data_types: str, incl_preceeding_epochs=0, incl_following_epochs=0):
+    def process(self, data_types: list, incl_preceeding_epochs=0, incl_following_epochs=0):
         """
         This function does preprocessing for cardiorespiratory data.
         :param data_types: A list which indicates the types of data we want: "THOR RES", "ECG", or both. If we select
-        both, each row of the saved numpy array will consist of THOR RES concatenated with the ECG signal, and then
+        both, the raw objects will be created separately, so that THOR RES can be upsampled, and then recombined into a single raw object
+        , and each row of the saved numpy array will consist of THOR RES concatenated with the ECG signal, and then
         a model can split the row and do with each as it sees fit.
         :param incl_preceeding_epochs: Context to include with each example.
         :param incl_following_epochs: Context to include with each example.
@@ -183,8 +177,93 @@ class SHHSCardioPreprocessor:
             # Skip this nsrrid if we decided to reject it based on equipment disconnects/ poor performance
             if t_start is None:
                 continue
+            # Load raw edf
+            edfs_dir = 'data/Raw/shhs/polysomnography/edfs/shhs1/'
+            patient_path = edfs_dir + "shhs1-" + str(nsrrid) + ".edf"
+            raw_edfs = []
+            if "ECG" in data_types:
+                raw_ecg = mne.io.read_raw_edf(patient_path, include=["ECG"])
+                raw = raw_ecg
 
-            # Create an epochs object for each of
+            # Load raw respiratory data
+            if "THOR RES" in data_types:
+                raw_rip = mne.io.read_raw_edf(patient_path, include=["THOR RES"])
+                raw_rip = self.upsample_rip(raw_rip)
+                raw = raw_rip
+                # Combining ecg and upsampled rip into one raw object
+                if "ECG" in data_types:
+                    raw = mne.io.concatenate_raws([raw_ecg, raw_rip])
+
+            # Perform epoching, taking into account our new t_start and t_end.
+
+
+    def upsample_rip(self, raw_rip: mne.io.Raw):
+        """
+        Creates a new mne.io.Raw object which is upsampled using cubic spline.
+        :param raw_rip: the mne.io.Raw object we want to upsample.
+        :return: raw_rip: the raw object reconstructed with upsampled data.
+        """
+
+        raw_data = raw_rip.get_data()[0]
+        x = np.arange(len(raw_data))
+        n_desired_samples = len(raw_data) * 125
+        xc = 0 + np.arange(0, n_desired_samples) * (1/125)
+        cs = scipy.interpolate.CubicSpline(x, raw_data)
+        upsampled_data = cs(xc)
+        info = mne.create_info(raw_rip.info['ch_names'], 125)
+        raw_upsampled = mne.io.RawArray(upsampled_data, info)
+        return raw_upsampled
+
+    @staticmethod
+    def load_stage_labels(self, nsrrid, raw_eeg) -> list:
+        # Initialise labels array for one patient
+        total_duration = raw_eeg.times[-1]
+        n_epochs = total_duration // 30 + 1  # +1 because the last epoch is less than 30s, but we want to include it
+        labels = [None] * int(n_epochs)
+        # Create path string for current patient.
+        annotations_path = f"data/Raw/shhs/polysomnography/annotations-events-nsrr/shhs1/shhs1-{nsrrid}-nsrr.xml"
+        # Check the annotations file is available for this patient.
+        if os.path.isfile(annotations_path):
+            annotations = ET.parse(annotations_path)
+            root = annotations.getroot()
+            # Check all ScoredEvents
+            for event in root.findall(
+                    ".//ScoredEvent"):  # . means starting from current node, // means ScoredEvent does not have to be a direct child of root
+                event_type = event.find(".EventType").text
+                # Check if this event is a stage annotation
+                if "Stages|Stages" == event_type:
+                    annotation = event.find("EventConcept").text
+                    # Label integer is at end of EventConcept string.
+                    label = int(annotation[-1])
+                    # Convert to our own labelling convention ("0:N3, 1:N1/N2, 2:REM, 3:W")
+                    if label == 3 or label == 4:  # Accounting for possibility of N4 in data.
+                        label = 0
+                    elif label == 2 or label == 1:
+                        label = 1
+                    elif label == 5:
+                        label = 2
+                    elif label == 0:
+                        label = 3
+                    else:
+                        print(f"nsrrid: {nsrrid} Unsupported label '{annotation}'.")
+                        label = None
+                    # Store label in its corresponding positions in a numpy array, based on start and duration of this event.
+                    start = float(event.find("Start").text)
+                    duration = float(event.find("Duration").text)
+                    for i in range(int(duration // 30)):
+                        index = int(start // 30 + i)
+                        # Sometimes the annotations go beyond the signal.
+                        try:
+                            labels[int(index)] = label
+                        except IndexError:
+                            pass
+                            # This happens when we get to the last label, because the raw signal is not an exact length divisible by 30.
+                            # There is one more label than there are full 30s epochs.
+                            print(
+                                f"nsrrid {nsrrid} Sleep stage annotation at epoch {index + 1} is out of range of EEG data ({n_epochs} epochs).")
+        else:
+            print(f"Annotations file for id {nsrrid} not available.")
+        return labels
 
 if __name__ == "__main__":
     os.chdir("C:/Users/Alex/PycharmProjects/4YP")
