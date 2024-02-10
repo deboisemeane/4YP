@@ -22,8 +22,7 @@ class SHHSCardioPreprocessor:
         self.demographics = pd.read_csv('data/Raw/shhs/datasets/shhs-harmonized-dataset-0.20.0.csv')
         self.choose_patients()  # Updates demographics DataFrame to only include acceptable examples.
         self.recordings_rejected = 0  # Recordings rejected due to equipment removal >5minutes long in the middle of the night.
-        self.epochs_removed = 0  # In the recordings that weren't rejected, how many 30s epochs have been excluded?
-        self.total_epochs_processed = 0  # We will use this to work out the proportion of epochs excluded due to equiment disconnect.
+        self.epochs_removed = []  # In the recordings that weren't rejected, how many 30s epochs have been excluded?
 
     def choose_patients(self):
         df = self.demographics
@@ -66,8 +65,11 @@ class SHHSCardioPreprocessor:
         # Segment the night based on changing position
         segments = np.nonzero(np.diff(position))[0]  # These are starting indeces corresponding to each position segment.
         segments = np.insert(segments, 0, 0)  # Need to include the start of the first segment, which isn't picked up by diff.
-        # Decide whether each segment has equipment disconnect
-        disconnects = []
+
+        five_minute_segments = []  # This will contain start times of segments > 5minutes long
+        disconnects = []  # This will contain 1s (disconnected) or 0s (connected) indicating whether each 5minute segment is a disconnect
+        five_minute_segment_indexes = []  # This will contain indexes of >5min segments in the list of ALL segment start times.
+
         # Default start and end of recording if there are no disconnects
         t_start, t_end = times[0], times[-1]+1
         for i, segment_start in enumerate(segments):
@@ -79,38 +81,95 @@ class SHHSCardioPreprocessor:
             segment_length = segment_end - segment_start
             if segment_length < 5*60:
                 continue
-            # Otherwise check if h.r. in this segment is non-zero
+            else:
+                five_minute_segments.append(segment_start)
+                five_minute_segment_indexes.append(i)
+            # Otherwise check if the segment is classified as a disconnect
             hr_segment = hr[segment_start:segment_end]
             hr_95_percentile = np.percentile(hr_segment, 95)
             hr_mean, hr_std = np.mean(hr_segment), np.std(hr_segment)
-            if hr_95_percentile < 5 or hr_std < 0.1:
-                disconnects.append(i)
-                if segment_start == 0:
-                    t_start = segments[i+1]
-                if segment_start == segments[-1]:
-                    t_end = segments[i]
-                else:
-                    t_start, t_end = None, None
-                    break_start, break_end = segment_start, segment_end
-                    self.recordings_rejected += 1
-                    break
+            if hr_95_percentile < 5 or hr_std > 30 or hr_mean < 25:
+                disconnects.append(1)  # The >5minute segment is classified as a disconnect
+            else:
+                disconnects.append(0)  # The >5minute segment is not classified as a disconnect
+        # Group disconnects and connects into chunks using diff
+        disconnect_diff = list(np.diff(disconnects)) # Values of 1 indicate the disconnect chunk started at this >5min segment, -1 indicates a reconnect.
+                                                # 0 means the equipment did not disconnect or reconnect at the start of this >5min segment.
+        # First element isn't found by diff - insert the start of a disconnect chunk if the beginning is disconnected
+        if disconnects[0] == 1:
+            _ = 1
+        else:
+            _ = 0
+        disconnect_diff = list(np.insert(disconnect_diff, 0, _))
+
+        # If the equipment is disconnected at the end of the recording:
+        if disconnects[-1] == 1:
+            # Set t_end to be the time of the last disconnect
+            i = len(disconnect_diff) - 1 - disconnect_diff[::-1].index(1)
+            t_end = five_minute_segments[i]
+            # Set boolean to tell us there is a disconnection at the end of the recording
+            end_disconnected = True
+        # Else t_end remains at the end of the recording and set boolean to say there is no disconnection at the end.
+        else:
+            end_disconnected = False
+        # If the equipment is disconnected at the start of the recording:
+        if disconnects[0] == 1:
+            # Set t_start to be the time of the first reconnect
+            t_start = five_minute_segments[disconnect_diff.index(-1)]
+            # Set boolean to tell us there is a disconnection at the start of the recording.
+            start_disconnected = True
+        # Else t_start remains at the start of the recording and set boolean to say there is no disconnection at the start.
+        else:
+            start_disconnected = False
+        # If the total number of disconnections is greater than the disconnections at the start or end
+        if sum([_ == 1 for _ in disconnect_diff]) > (int(start_disconnected) + int(end_disconnected)):
+            # We infer that there was a disconnection in the middle of the recording
+            # Set t_start and t_end to None since we want to discard this recording
+            t_start, t_end = None, None
+            middle_disconnected = True
+        else:
+            middle_disconnected = False
 
         # Visual check that the algorithm does what we want it to.
-        if t_start!=0 or t_end!=times[-1]+1 or t_start is None:
+        # Find all the disconnects and reconnects
+        disconnect_indices = [index for (index, item) in enumerate(disconnect_diff) if item == 1]
+        disconnect_times = [five_minute_segments[i] for i in disconnect_indices]
+        reconnect_indices = [index for (index, item) in enumerate(disconnect_diff) if item == -1]
+        reconnect_times = [five_minute_segments[i] for i in reconnect_indices]
+        """if middle_disconnected: #or end_disconnected:
             fig, ax = plt.subplots()
             fig1, ax1 = plt.subplots()
             ax.plot(position.squeeze())
             ax1.plot(hr.squeeze())
             if t_start is not None:
-                ax1.axvline(t_start, color='r')
+                ax1.axvline(t_start, color='r', label='Start/End')
                 ax1.axvline(t_end, color='r')
-            else:
-                ax1.axvline(break_start, color='r')
-                ax1.axvline(break_end, color='r')
+            for i,t in enumerate(disconnect_times):
+                label = 'Disconnections' if i == 0 else None
+                ax1.axvline(t, color='y', linewidth=1, label=label)
+            for i,t in enumerate(reconnect_times):
+                label = 'Reconnections' if i == 0 else None
+                ax1.axvline(t, color='g', linewidth=1, label=label)
+            ax1.legend()
             print("visualised")
-            plt.close("all")
+            plt.close("all")"""
+        if middle_disconnected:
+            self.recordings_rejected += 1
+        else:
+            epochs_removed = np.ceil(t_start / 30) + np.floor(segments[-1]/30) - np.ceil(t_end / 30)
+            self.epochs_removed.append(epochs_removed)
         return t_start, t_end
-    def process(self, data_types: list, incl_preceeding_epochs=0, incl_following_epochs=0):
+
+    def process(self, data_types: str, incl_preceeding_epochs=0, incl_following_epochs=0):
+        """
+        This function does preprocessing for cardiorespiratory data.
+        :param data_types: A list which indicates the types of data we want: "THOR RES", "ECG", or both. If we select
+        both, each row of the saved numpy array will consist of THOR RES concatenated with the ECG signal, and then
+        a model can split the row and do with each as it sees fit.
+        :param incl_preceeding_epochs: Context to include with each example.
+        :param incl_following_epochs: Context to include with each example.
+        :return: None: simply saves each nsrrid to a numpy file according to save_cardio_numpy
+        """
 
         # Check valid number of preceeding and following epochs for each example.
         assert incl_preceeding_epochs >= 0, "Number of preceeding epochs to include with each example must be >= 0"
@@ -118,10 +177,14 @@ class SHHSCardioPreprocessor:
 
         for nsrrid in self.demographics["nsrrid"]:
             print(f"Processing nsrrid {nsrrid}")
-            # Check for pulseox H.R. disconnections, which indicates equipment removal.
+            # Check for pulseox H.R. disconnections, which indicates equipment disconnection/ poor performance.
             t_start, t_end = self.remove_equipment_disconnect(nsrrid)
             print(f"Recordings rejected due to h.r. dropout in that wasn't at the start or end: {self.recordings_rejected}")
+            # Skip this nsrrid if we decided to reject it based on equipment disconnects/ poor performance
+            if t_start is None:
+                continue
 
+            # Create an epochs object for each of
 
 if __name__ == "__main__":
     os.chdir("C:/Users/Alex/PycharmProjects/4YP")
