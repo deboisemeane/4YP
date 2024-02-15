@@ -17,7 +17,7 @@ def main():
     #split = {"train": 1, "val": 1, "test": 1}
     #resample = {"2": 2.84}
 
-    data_config = SHHSConfig(split=split, data_type="t", art_rejection=True, lpf=True, resample=None)
+    data_config = SHHSConfig(split=split, data_type="t", art_rejection=True, filtering=True, resample=None)
     optimiser_config = AdamConfig(lr=0.0001)
 
     trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=AFNet, device=device)

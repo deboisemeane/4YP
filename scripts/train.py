@@ -48,12 +48,12 @@ class ISRUCConfig(DataConfig):
 
 class SHHSConfig(DataConfig):  # This config class is for frequency feature SHHS datasets.
     def __init__(self, split: dict, data_type: str, art_rejection: bool, prec_epochs: int, foll_epochs: int,
-                 lpf: bool = True, resample: dict = None, **kwargs):
-        super().__init__(resample=resample, data_type=data_type, split=split, art_rejection=art_rejection, lpf=lpf,
+                 filtering: bool = True, resample: dict = None, **kwargs):
+        super().__init__(resample=resample, data_type=data_type, split=split, art_rejection=art_rejection, lpf=filtering,
                          prec_epochs=prec_epochs, foll_epochs=foll_epochs, **kwargs)
 
         # Choosing between frequency or time domain data.
-        data_dir = get_data_dir_shhs(data_type=data_type, art_rejection=art_rejection, lpf=lpf, prec_epochs=prec_epochs,
+        data_dir = get_data_dir_shhs(data_type=data_type, art_rejection=art_rejection, filtering=filtering, prec_epochs=prec_epochs,
                                      foll_epochs=foll_epochs)
 
         # Read all filenames and extract nsrrids
@@ -119,9 +119,10 @@ class Train:
             self.test_dataset = SHHSDataset_t(nsrrids=self.patients["test"], data_dir=self.data_dir)
 
         elif isinstance(data_config, SHHSConfig) and self.data_type == "f":
-            self.train_dataset = SHHSDataset_f(nsrrids=self.patients["train"], data_dir=self.data_dir, resample=self.resample)
-            self.val_dataset = SHHSDataset_f(nsrrids=self.patients["val"], data_dir=self.data_dir)
-            self.test_dataset = SHHSDataset_f(nsrrids=self.patients["test"], data_dir=self.data_dir)
+            raise ValueError("We are no longer working with frequency features.")
+            # self.train_dataset = SHHSDataset_f(nsrrids=self.patients["train"], data_dir=self.data_dir, resample=self.resample)
+            # self.val_dataset = SHHSDataset_f(nsrrids=self.patients["val"], data_dir=self.data_dir)
+            # self.test_dataset = SHHSDataset_f(nsrrids=self.patients["test"], data_dir=self.data_dir)
 
         # Create DataLoaders
         batch_size = 64
@@ -167,7 +168,7 @@ class Train:
         print(f"Class counts in training data: {self.train_dataset.label_counts}")
         if weight_losses is True:
             print(f"Weighting loss: {weight}")
-
+        print(f"Test nsrrids: {self.test_dataset.nsrrids}")
         # Set criterion and optimiser
         criterion = nn.CrossEntropyLoss(weight=weight)
         optimiser = self.optimiser
