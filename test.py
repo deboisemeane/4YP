@@ -1,7 +1,8 @@
-from preprocess import SHHSPreprocessor
+from preprocess import SHHSCardioPreprocessor
 import torch
-pre = SHHSPreprocessor(art_rejection=True, lpf=True)
-pre.process_t(incl_preceeding_epochs=0, incl_following_epochs=0)
+pre = SHHSCardioPreprocessor()
+pre.process(data_types=["THOR RES"])
+pre.process(data_types=["ECG"])
+pre.process(data_types=["THOR RES, ECG"])
 
 
-#print(torch.cuda.is_available())
