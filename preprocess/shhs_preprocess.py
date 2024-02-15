@@ -2,6 +2,7 @@ import mne
 import os
 import numpy as np
 import pandas as pd
+
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import yasa
@@ -266,7 +267,7 @@ class SHHSPreprocessor:
     # Save frequency features and labels to csv
     def save_f_features_labels_csv(self, nsrrid, features, epochs):  # Saves features and labels (where experts agree) to csv.
         # Find the directory to save data to
-        data_dir = get_data_dir_shhs(data_type="f", art_rejection=self.params["art_rejection"], lpf=self.params["lpf"])
+        data_dir = get_data_dir_shhs(data_type="f", art_rejection=self.params["art_rejection"], filtering=self.params["lpf"])
         # Check data_dir is a directory and make one if not
         if np.logical_not(os.path.isdir(data_dir)):
             os.makedirs(data_dir)
@@ -289,7 +290,7 @@ class SHHSPreprocessor:
     def save_t_features_labels_npy(self, nsrrid, epochs: mne.Epochs,
                                    incl_preceeding_epochs: int, incl_following_epochs: int):
         # Get directory for processed data, create it if it doesn't exist
-        data_dir = get_data_dir_shhs(data_type="t", art_rejection=self.params["art_rejection"], lpf=self.params["lpf"],
+        data_dir = get_data_dir_shhs(data_type="t", art_rejection=self.params["art_rejection"], filtering=self.params["lpf"],
                                      prec_epochs=incl_preceeding_epochs, foll_epochs=incl_following_epochs)
         if np.logical_not(os.path.isdir(data_dir)):
             os.makedirs(data_dir)
@@ -327,3 +328,6 @@ class SHHSPreprocessor:
                 allow_pickle=False)    # npy is more space and read efficient than csv
 
 
+if __name__ == "__main__":
+
+    pre = SHHSPreprocessor()
