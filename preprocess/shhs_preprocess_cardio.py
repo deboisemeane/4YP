@@ -13,13 +13,7 @@ from utils import get_data_dir_shhs
 # This class is used to process raw SHHS-1 data for all (selected) participants.
 class SHHSCardioPreprocessor:
 
-    def __init__(self, **params):
-        default_params = {"lpf": True,       # Decide whether to low pass filter
-                          "lpf_cutoff": 30,
-                          }
-        self.params = default_params
-        self.params.update(params)
-
+    def __init__(self):
         self.demographics = pd.read_csv('data/Raw/shhs/datasets/shhs-harmonized-dataset-0.20.0.csv')
         self.choose_patients()  # Updates demographics DataFrame to only include acceptable examples.
         self.recordings_rejected = 0  # Recordings rejected due to equipment removal >5minutes long in the middle of the night.
@@ -64,7 +58,7 @@ class SHHSCardioPreprocessor:
         five_minute_segment_indexes = []  # This will contain indexes of >5min segments in the list of ALL segment start times.
 
         # Default start and end of recording if there are no disconnects
-        t_start, t_end = times[0], times[-1]+1
+        t_start, t_end = times[0], times[-1]
         for i, segment_start in enumerate(segments):
             # Don't bother checking equipment disconnects if the segment is < 5minutes long.
             if i < len(segments)-1:
@@ -149,7 +143,7 @@ class SHHSCardioPreprocessor:
         if middle_disconnected:
             self.recordings_rejected += 1
         else:
-            epochs_removed = np.ceil(t_start / 30) + np.floor(segments[-1]/30) - np.ceil(t_end / 30)
+            epochs_removed = np.ceil(t_start / 30) + np.floor(times[-1]/30) - np.floor(t_end / 30)
             self.epochs_removed.append(epochs_removed)
         return t_start, t_end
 
@@ -165,6 +159,8 @@ class SHHSCardioPreprocessor:
         :return: None: simply saves each nsrrid to a numpy file according to save_cardio_numpy
         """
 
+        # Determine data_type argument which will be passed to
+
         # Check valid number of preceeding and following epochs for each example.
         assert incl_preceeding_epochs >= 0, "Number of preceeding epochs to include with each example must be >= 0"
         assert incl_following_epochs >= 0, "Number of following epochs to include with each example must be >=0"
@@ -174,44 +170,135 @@ class SHHSCardioPreprocessor:
             # Check for pulseox H.R. disconnections, which indicates equipment disconnection/ poor performance.
             t_start, t_end = self.remove_equipment_disconnect(nsrrid)
             print(f"Recordings rejected due to h.r. dropout in that wasn't at the start or end: {self.recordings_rejected}")
+            print(f"Mean, std number of epochs removed per recording we didn't reject: {np.mean(self.epochs_removed)}, {np.std(self.epochs_removed)}.")
+
             # Skip this nsrrid if we decided to reject it based on equipment disconnects/ poor performance
             if t_start is None:
                 continue
             # Load raw edf
+            assert "THOR RES" in data_types or "ECG" in data_types, "Invalid requested channels."
             edfs_dir = 'data/Raw/shhs/polysomnography/edfs/shhs1/'
             patient_path = edfs_dir + "shhs1-" + str(nsrrid) + ".edf"
-            raw_edfs = []
+            raw = None
+
+            # Load raw ECG data
             if "ECG" in data_types:
-                raw_ecg = mne.io.read_raw_edf(patient_path, include=["ECG"])
+                raw_ecg = mne.io.read_raw_edf(patient_path, include=["ECG"], preload=True)
+                raw_ecg = raw_ecg.filter(l_freq=0.5, h_freq=40, method="fir", phase="zero")
                 raw = raw_ecg
+            else:
+                raw_ecg = None
 
             # Load raw respiratory data
             if "THOR RES" in data_types:
-                raw_rip = mne.io.read_raw_edf(patient_path, include=["THOR RES"])
+                raw_rip = mne.io.read_raw_edf(patient_path, include=["THOR RES"], preload=True)
+                raw_rip = raw_rip.filter(l_freq=None, h_freq=2, method="fir", phase="zero")
                 raw_rip = self.upsample_rip(raw_rip)
                 raw = raw_rip
                 # Combining ecg and upsampled rip into one raw object
                 if "ECG" in data_types:
-                    raw = mne.io.concatenate_raws([raw_ecg, raw_rip])
+                    raw_data = np.concatenate((raw_ecg.get_data(), raw_rip.get_data()), 0)
+                    info = mne.create_info(['ECG', 'THOR RES'], 125)
+                    raw = mne.io.RawArray(raw_data, info)
+            else:
+                raw_rip = None
+
+            # Retrieve stage labels
+            stage = self.load_stage_labels(self, nsrrid, raw)
 
             # Perform epoching, taking into account our new t_start and t_end.
+            epochs = self.create_epochs(raw, t_start, t_end, stage)
 
+            # Save to npy file
+            if "ECG" in data_types:
+                if "THOR RES" in data_types:
+                    data_type = "ecg_rip"
+                else:
+                    data_type = "ecg"
+            else:
+                data_type = "rip"
 
-    def upsample_rip(self, raw_rip: mne.io.Raw):
+            self.save_features_labels_npy(nsrrid, epochs, incl_preceeding_epochs, incl_following_epochs, data_type)
+
+    def save_features_labels_npy(self, nsrrid, epochs: mne.Epochs,
+                                 incl_preceeding_epochs: int, incl_following_epochs: int, data_type: str):
+        data_dir = get_data_dir_shhs(data_type=data_type, art_rejection=True, filtering=True,
+                                     prec_epochs=incl_preceeding_epochs, foll_epochs=incl_following_epochs)
+        if np.logical_not(os.path.isdir(data_dir)):
+            os.makedirs(data_dir)
+
+        # Construct time domain features
+        data = epochs.get_data()
+        stage = epochs.metadata["Sleep Stage"]
+        n_epochs, n_samples_per_epoch = data.shape[0], data.shape[2]
+        features = []
+        labels = []
+
+        for i in range(n_epochs):
+
+            # Check that this epoch has a label
+            if np.isnan(stage[i]):  # Converting stage list to dataframe converted None -> nan
+                continue  # Skip this epoch if it doesn't have a label.
+
+            # Check that the required preceeding and following epochs are present
+            start_idx = i - incl_preceeding_epochs
+            end_idx = i + incl_following_epochs + 1
+            if start_idx < 0 or end_idx > n_epochs:
+                continue  # Skip this epoch if too close to edges of recording.
+
+            # Check if we have more than one channel (ecg and rip) in which case we are flattening out the channel dimension and
+            # saving ecg and rip together in the same row for each example, ecg the first 3750 entries, rip the next 3750
+            if data.shape[1] > 1:
+                features.append(np.concatenate((data[start_idx:end_idx, 0, :].flatten(), data[start_idx:end_idx, 1, :].flatten())))
+            else:
+                features.append(data[start_idx:end_idx, :, :].flatten())
+
+            labels.append(stage[i])
+
+        features = np.array(features)
+        labels = np.expand_dims(np.array(labels), 1)
+
+        # Save to dataframe
+        data = np.concatenate((features, labels), axis=1)
+        data = np.float32(data)  # Float32 takes less space compared to float64
+        np.save(file=data_dir / f"nsrrid_{nsrrid}",
+                arr=data,
+                allow_pickle=False)
+
+    def create_epochs(self, raw, t_start, t_end, stage):
+        # Find sample frequency and length of one sample
+        sf = raw.info["sfreq"]
+        t_s = 1 / sf
+
+        # Apply d.c. detrend around 0
+        detrend = 0
+
+        # Trim stage data to match with t_start and t_end
+        start_idx = int(np.ceil(t_start / 30))
+        end_idx = int(np.floor(t_end / 30))
+        stage = stage[start_idx: end_idx]
+        metadata = pd.DataFrame({"Sleep Stage": stage})
+        # Create events and epochs
+        events = mne.make_fixed_length_events(raw, start=t_start, stop=t_end, duration=30)
+        epochs = mne.Epochs(raw, events, tmin=0, tmax=30 - t_s,
+                            metadata=metadata, preload=True, detrend=detrend, baseline=None)
+        return epochs
+
+    def upsample_rip(self, raw_rip: mne.io.Raw) -> mne.io.RawArray:
         """
-        Creates a new mne.io.Raw object which is upsampled using cubic spline.
+        Creates a new mne.io.Raw object which is upsampled from 10Hz to 125Hz using cubic spline.
         :param raw_rip: the mne.io.Raw object we want to upsample.
         :return: raw_rip: the raw object reconstructed with upsampled data.
         """
-
         raw_data = raw_rip.get_data()[0]
         x = np.arange(len(raw_data))
-        n_desired_samples = len(raw_data) * 125
-        xc = 0 + np.arange(0, n_desired_samples) * (1/125)
+        n_desired_samples = np.floor(len(raw_data) * 12.5)  # 12.5 upsamples from 10Hz to  125Hz.
+        xc = 0 + np.arange(0, n_desired_samples) * (1/12.5)
         cs = scipy.interpolate.CubicSpline(x, raw_data)
-        upsampled_data = cs(xc)
+        upsampled_data = np.expand_dims(cs(xc), 0)  # Need to add back in the channel dimension
         info = mne.create_info(raw_rip.info['ch_names'], 125)
         raw_upsampled = mne.io.RawArray(upsampled_data, info)
+
         return raw_upsampled
 
     @staticmethod
@@ -268,4 +355,4 @@ class SHHSCardioPreprocessor:
 if __name__ == "__main__":
     os.chdir("C:/Users/Alex/PycharmProjects/4YP")
     pre = SHHSCardioPreprocessor()
-    pre.process(["THOR RES", "ECG"])
+    pre.process(["THOR RES", "ECG"], incl_preceeding_epochs=2, incl_following_epochs=1)
