@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --time=:2-0
+#SBATCH --time=:2-00:00:00
 #SBATCH --output=outputs/test.stdout
 ##SBATCH --gres=gpu:1
 
