@@ -279,6 +279,8 @@ class SHHSCardioPreprocessor:
         stage = stage[start_idx: end_idx]
         metadata = pd.DataFrame({"Sleep Stage": stage})
         # Create events and epochs
+        t_start = 30 * start_idx  # Making sure we take the actual start time of events to line up with stage labeling
+        t_end = 30 * end_idx  # starting time of a new event must be strictly less than this.
         events = mne.make_fixed_length_events(raw, start=t_start, stop=t_end, duration=30)
         epochs = mne.Epochs(raw, events, tmin=0, tmax=30 - t_s,
                             metadata=metadata, preload=True, detrend=detrend, baseline=None)
@@ -355,4 +357,4 @@ class SHHSCardioPreprocessor:
 if __name__ == "__main__":
     os.chdir("C:/Users/Alex/PycharmProjects/4YP")
     pre = SHHSCardioPreprocessor()
-    pre.process(["THOR RES", "ECG"], incl_preceeding_epochs=2, incl_following_epochs=1)
+    pre.process(["THOR RES"], incl_preceeding_epochs=0, incl_following_epochs=0)
