@@ -166,6 +166,9 @@ class SHHSCardioPreprocessor:
         assert incl_following_epochs >= 0, "Number of following epochs to include with each example must be >=0"
 
         for nsrrid in self.demographics["nsrrid"]:
+            # We will ignore recordings where sfreq is not 10 for THOR RES, or if sfreq is not 125 for ECG.
+            nsrrids_incorrect_sfreq = []
+
             print(f"Processing nsrrid {nsrrid}")
             # Check for pulseox H.R. disconnections, which indicates equipment disconnection/ poor performance.
             t_start, t_end = self.remove_equipment_disconnect(nsrrid)
@@ -184,6 +187,11 @@ class SHHSCardioPreprocessor:
             # Load raw ECG data
             if "ECG" in data_types:
                 raw_ecg = mne.io.read_raw_edf(patient_path, include=["ECG"], preload=True)
+                # Check correct sampling rate
+                if raw_ecg.info["sfreq"] != 125:
+                    nsrrids_incorrect_sfreq.append(nsrrid)
+                    print(f"Nsrrids rejected due to an unexpected sampling rate: {nsrrids_incorrect_sfreq}")
+                    continue  # Skip this recording
                 raw_ecg = raw_ecg.filter(l_freq=0.5, h_freq=40, method="fir", phase="zero")
                 raw = raw_ecg
             else:
@@ -192,16 +200,23 @@ class SHHSCardioPreprocessor:
             # Load raw respiratory data
             if "THOR RES" in data_types:
                 raw_rip = mne.io.read_raw_edf(patient_path, include=["THOR RES"], preload=True)
+                # Check correct sampling rate
+                if raw_rip.info["sfreq"] != 10:
+                    nsrrids_incorrect_sfreq.append(nsrrid)
+                    print(f"Nsrrids rejected due to an unexpected sampling rate: {nsrrids_incorrect_sfreq}")
+                    continue  # Skip this recording
                 raw_rip = raw_rip.filter(l_freq=None, h_freq=2, method="fir", phase="zero")
                 raw_rip = self.upsample_rip(raw_rip)
                 raw = raw_rip
                 # Combining ecg and upsampled rip into one raw object
                 if "ECG" in data_types:
-                    raw_data = np.concatenate((raw_ecg.get_data(), raw_rip.get_data()), 0)
+                    raw_data = np.concatenate((raw_ecg.get_data(copy=False), raw_rip.get_data(copy=False)), 0)
                     info = mne.create_info(['ECG', 'THOR RES'], 125)
                     raw = mne.io.RawArray(raw_data, info)
             else:
                 raw_rip = None
+
+            print(f"Nsrrids rejected due to an unexpected sampling rate: {nsrrids_incorrect_sfreq}")
 
             # Retrieve stage labels
             stage = self.load_stage_labels(self, nsrrid, raw)
@@ -228,7 +243,7 @@ class SHHSCardioPreprocessor:
             os.makedirs(data_dir)
 
         # Construct time domain features
-        data = epochs.get_data()
+        data = epochs.get_data(copy=False)
         stage = epochs.metadata["Sleep Stage"]
         n_epochs, n_samples_per_epoch = data.shape[0], data.shape[2]
         features = []
@@ -292,7 +307,7 @@ class SHHSCardioPreprocessor:
         :param raw_rip: the mne.io.Raw object we want to upsample.
         :return: raw_rip: the raw object reconstructed with upsampled data.
         """
-        raw_data = raw_rip.get_data()[0]
+        raw_data = raw_rip.get_data(copy=False)[0]
         x = np.arange(len(raw_data))
         n_desired_samples = np.floor(len(raw_data) * 12.5)  # 12.5 upsamples from 10Hz to  125Hz.
         xc = 0 + np.arange(0, n_desired_samples) * (1/12.5)
@@ -357,4 +372,4 @@ class SHHSCardioPreprocessor:
 if __name__ == "__main__":
     os.chdir("C:/Users/Alex/PycharmProjects/4YP")
     pre = SHHSCardioPreprocessor()
-    pre.process(["THOR RES"], incl_preceeding_epochs=0, incl_following_epochs=0)
+    pre.process(["THOR RES", "ECG"], incl_preceeding_epochs=0, incl_following_epochs=0)
