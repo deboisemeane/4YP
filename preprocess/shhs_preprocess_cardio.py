@@ -210,7 +210,7 @@ class SHHSCardioPreprocessor:
                 raw = raw_rip
                 # Combining ecg and upsampled rip into one raw object
                 if "ECG" in data_types:
-                    raw_data = np.concatenate((raw_ecg.get_data(copy=False), raw_rip.get_data(copy=False)), 0)
+                    raw_data = np.concatenate((raw_ecg.get_data(), raw_rip.get_data()), 0)
                     info = mne.create_info(['ECG', 'THOR RES'], 125)
                     raw = mne.io.RawArray(raw_data, info)
             else:
@@ -307,7 +307,7 @@ class SHHSCardioPreprocessor:
         :param raw_rip: the mne.io.Raw object we want to upsample.
         :return: raw_rip: the raw object reconstructed with upsampled data.
         """
-        raw_data = raw_rip.get_data(copy=False)[0]
+        raw_data = raw_rip.get_data()[0]
         x = np.arange(len(raw_data))
         n_desired_samples = np.floor(len(raw_data) * 12.5)  # 12.5 upsamples from 10Hz to  125Hz.
         xc = 0 + np.arange(0, n_desired_samples) * (1/12.5)
