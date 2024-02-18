@@ -1,6 +1,6 @@
 import torch
 from scripts import Train, AdamConfig, SHHSConfig
-from src.models import MLP1, Sors, Sors7, Sors_nocontext1, Sors_nocontext2
+from src.models import MLP1, Sors, Sors7, Sors_nocontext1, Sors_nocontext2, Sors_cardiocnn
 import matplotlib.pyplot as plt
 from utils import Timer
 
@@ -21,7 +21,7 @@ def main():
                              prec_epochs=0, foll_epochs=0)
     optimiser_config = AdamConfig(lr=0.0001)
 
-    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors_nocontext2, device=device)
+    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors_cardiocnn, device=device)
 
     timer = Timer()
     timer.start()
@@ -34,7 +34,7 @@ def main():
 
     # Plotting loss for training with SHHS
     fig, ax = plt.subplots()
-    ax.set_title("Training CNN-12")
+    ax.set_title("CardioExperiment2")
     labels = {"t": "Training", "v": "Validation"}
     trainer.plot_loss(ax=ax, labels=labels)
     plt.savefig(f'figures/cardio_sorscnn_2channel{split["train"]}-{split["val"]}-{split["test"]}.png')
