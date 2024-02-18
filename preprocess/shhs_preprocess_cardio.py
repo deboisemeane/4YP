@@ -165,10 +165,10 @@ class SHHSCardioPreprocessor:
         assert incl_preceeding_epochs >= 0, "Number of preceeding epochs to include with each example must be >= 0"
         assert incl_following_epochs >= 0, "Number of following epochs to include with each example must be >=0"
 
-        for nsrrid in self.demographics["nsrrid"]:
-            # We will ignore recordings where sfreq is not 10 for THOR RES, or if sfreq is not 125 for ECG.
-            nsrrids_incorrect_sfreq = []
+        # We will ignore recordings where sfreq is not 10 for THOR RES, or if sfreq is not 125 for ECG.
+        nsrrids_incorrect_sfreq = []
 
+        for nsrrid in self.demographics["nsrrid"]:
             print(f"Processing nsrrid {nsrrid}")
             # Check for pulseox H.R. disconnections, which indicates equipment disconnection/ poor performance.
             t_start, t_end = self.remove_equipment_disconnect(nsrrid)
