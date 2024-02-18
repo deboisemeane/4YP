@@ -19,7 +19,7 @@ def main():
 
     data_config = SHHSConfig(split=split, data_type="ecg", art_rejection=True, filtering=True, resample=None,
                              prec_epochs=0, foll_epochs=0)
-    optimiser_config = AdamConfig(lr=0.0001)
+    optimiser_config = AdamConfig(lr=0.00003)
 
     trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors_nocontext2, device=device)
 
