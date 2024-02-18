@@ -17,7 +17,7 @@ def main():
     #split = {"train": 350, "val": 100, "test": 50}
     #resample = {"2": 2.84}
 
-    data_config = SHHSConfig(split=split, data_type="rip", art_rejection=True, filtering=True, resample=None,
+    data_config = SHHSConfig(split=split, data_type="ecg_rip", art_rejection=True, filtering=True, resample=None,
                              prec_epochs=0, foll_epochs=0)
     optimiser_config = AdamConfig(lr=0.0001)
 
@@ -37,7 +37,7 @@ def main():
     ax.set_title("Training CNN-12")
     labels = {"t": "Training", "v": "Validation"}
     trainer.plot_loss(ax=ax, labels=labels)
-    plt.savefig(f'figures/rip_sors_nocontext2{split["train"]}-{split["val"]}-{split["test"]}.png')
+    plt.savefig(f'figures/cardio_sorscnn_2channel{split["train"]}-{split["val"]}-{split["test"]}.png')
 
 
 if __name__ == '__main__':
