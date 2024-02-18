@@ -113,7 +113,7 @@ class Train:
             self.val_dataset = ISRUCDataset(patients=self.patients["val"])
             self.test_dataset = ISRUCDataset(patients=self.patients["test"])
 
-        elif isinstance(data_config, SHHSConfig) and self.data_type == "t":
+        elif isinstance(data_config, SHHSConfig):
             self.train_dataset = SHHSDataset_t(nsrrids=self.patients["train"], data_dir=self.data_dir)
             self.val_dataset = SHHSDataset_t(nsrrids=self.patients["val"], data_dir=self.data_dir)
             self.test_dataset = SHHSDataset_t(nsrrids=self.patients["test"], data_dir=self.data_dir)
