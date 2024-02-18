@@ -26,7 +26,7 @@ def accuracy_metrics(confusion_matrix):
     total_PPV = np.sum(PPV * weights_for_ppv)
     total_NPV = np.sum(NPV * weights_for_npv)
     total_FDR = np.sum(FDR * weights_for_ppv)
-    total_ACC = np.sum(ACC * weights_for_other_metrics)
+    total_ACC = np.sum(TP) / total_instances
 
     # Total Cohen's Kappa
     Po = np.sum(TP) / total_instances
@@ -37,3 +37,10 @@ def accuracy_metrics(confusion_matrix):
             "Total TPR": total_TPR, "Total PPV": total_PPV, "Total NPV": total_NPV, "Total FDR": total_FDR,
             "Total ACC": total_ACC,
             "Total Kappa": total_Kappa}
+
+if __name__ == "__main__":
+    confusion = np.array([[34520,  5561,  1139,   684],
+ [19937, 64219, 27960,  7973],
+ [  613,  4244, 31750,  5585],
+ [ 1512,  2692,  8910, 63515]])
+    print(accuracy_metrics(confusion))
