@@ -267,7 +267,8 @@ class SHHSPreprocessor:
     # Save frequency features and labels to csv
     def save_f_features_labels_csv(self, nsrrid, features, epochs):  # Saves features and labels (where experts agree) to csv.
         # Find the directory to save data to
-        data_dir = get_data_dir_shhs(data_type="f", art_rejection=self.params["art_rejection"], filtering=self.params["lpf"])
+        data_dir = get_data_dir_shhs(data_type="f", art_rejection=self.params["art_rejection"], filtering=self.params["lpf"],
+                                    prec_epochs=0, foll_epochs=0)
         # Check data_dir is a directory and make one if not
         if np.logical_not(os.path.isdir(data_dir)):
             os.makedirs(data_dir)

@@ -23,9 +23,10 @@ def get_data_dir_shhs(data_type: str, art_rejection: bool, filtering: bool, prec
     if data_type in ["f", "t"]:
         if data_type == "f":
             data_dir = data_dir / "Frequency_Features/"
+            data_dir = data_dir / f"art_rejection_{int(art_rejection)}_lpf_{int(filtering)}"
         elif data_type == "t":
             data_dir = data_dir / "Time_Features/"
-        data_dir = data_dir / f"art_rejection_{int(art_rejection)}_lpf_{int(filtering)}_prec{prec_epochs}_foll{foll_epochs}/"
+            data_dir = data_dir / f"art_rejection_{int(art_rejection)}_lpf_{int(filtering)}_prec{prec_epochs}_foll{foll_epochs}/"
 
     elif data_type in ["ecg", "rip", "ecg_rip"]:
         data_dir = data_dir / "Cardiorespiratory" / f"{data_type}_prec{prec_epochs}_foll{foll_epochs}"
