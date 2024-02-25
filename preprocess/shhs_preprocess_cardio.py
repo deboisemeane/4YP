@@ -192,7 +192,8 @@ class SHHSCardioPreprocessor:
                     nsrrids_incorrect_sfreq.append(nsrrid)
                     print(f"Nsrrids rejected due to an unexpected sampling rate: {nsrrids_incorrect_sfreq}")
                     continue  # Skip this recording
-                raw_ecg = raw_ecg.filter(l_freq=0.5, h_freq=40, method="fir", phase="zero")
+                raw_ecg = raw_ecg.filter(l_freq=0.5, h_freq=40, method="iir", phase="zero-double",
+                                         iir_params={"order": 8, "ftype": "butter"})
                 raw = raw_ecg
             else:
                 raw_ecg = None
@@ -205,7 +206,8 @@ class SHHSCardioPreprocessor:
                     nsrrids_incorrect_sfreq.append(nsrrid)
                     print(f"Nsrrids rejected due to an unexpected sampling rate: {nsrrids_incorrect_sfreq}")
                     continue  # Skip this recording
-                raw_rip = raw_rip.filter(l_freq=None, h_freq=2, method="fir", phase="zero")
+                raw_rip = raw_rip.filter(l_freq=0.1, h_freq=4, method="iir", phase="zero-double",
+                                         iir_params={"order": 8, "ftype": "butter"})
                 raw_rip = self.upsample_rip(raw_rip)
                 raw = raw_rip
                 # Combining ecg and upsampled rip into one raw object
@@ -370,6 +372,6 @@ class SHHSCardioPreprocessor:
         return labels
 
 if __name__ == "__main__":
-    os.chdir("C:/Users/Alex/PycharmProjects/4YP")
+    os.chdir("C:/Users/alexa/PycharmProjects/4YP")
     pre = SHHSCardioPreprocessor()
-    pre.process(["THOR RES", "ECG"], incl_preceeding_epochs=0, incl_following_epochs=0)
+    pre.process(["ECG"], incl_preceeding_epochs=0, incl_following_epochs=0)
