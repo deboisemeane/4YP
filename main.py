@@ -36,8 +36,8 @@ def main():
     fig, ax = plt.subplots()
     ax.set_title("CardioExperiment0")
     labels = {"t": "Training", "v": "Validation"}
-    trainer.plot_loss(ax=ax, labels=labels)
-    plt.savefig(f'figures/rip_sors_nocontext2{split["train"]}-{split["val"]}-{split["test"]}.png')
+    #trainer.plot_loss(ax=ax, labels=labels)
+    #plt.savefig(f'figures/rip_sors_nocontext2{split["train"]}-{split["val"]}-{split["test"]}.png')
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 import torch
 from scripts import Train, AdamConfig, SHHSConfig
-from src.models import MLP1, Sors, Sors7, Sors_nocontext1, Sors_nocontext2
+from src.models import MLP1, Sors, Sors7, Sors_nocontext1, Sors_nocontext2, Sors_largekernels
 import matplotlib.pyplot as plt
 from utils import Timer
 
@@ -21,7 +21,7 @@ def main():
                              prec_epochs=0, foll_epochs=0)
     optimiser_config = AdamConfig(lr=0.00003)
 
-    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors_nocontext2, device=device)
+    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors_largekernels, device=device)
 
     timer = Timer()
     timer.start()
@@ -34,10 +34,11 @@ def main():
 
     # Plotting loss for training with SHHS
     fig, ax = plt.subplots()
-    ax.set_title("CardioExperiment1")
+    ax.set_title("Sorslargekernels")
     labels = {"t": "Training", "v": "Validation"}
-    trainer.plot_loss(ax=ax, labels=labels)
-    plt.savefig(f'figures/ecg_sors_nocontext2{split["train"]}-{split["val"]}-{split["test"]}.png')
+
+    #trainer.plot_loss(ax=ax, labels=labels)
+    #plt.savefig(f'figures/{split["train"]}-{split["val"]}-{split["test"]}.png')
 
 
 if __name__ == '__main__':
