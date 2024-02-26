@@ -288,7 +288,7 @@ class SHHSCardioPreprocessor:
         t_s = 1 / sf
 
         # Apply d.c. detrend around 0
-        detrend = 0
+        #detrend = 0
 
         # Trim stage data to match with t_start and t_end
         start_idx = int(np.ceil(t_start / 30))
@@ -300,7 +300,7 @@ class SHHSCardioPreprocessor:
         t_end = 30 * end_idx  # starting time of a new event must be strictly less than this.
         events = mne.make_fixed_length_events(raw, start=t_start, stop=t_end, duration=30)
         epochs = mne.Epochs(raw, events, tmin=0, tmax=30 - t_s,
-                            metadata=metadata, preload=True, detrend=detrend, baseline=None)
+                            metadata=metadata, preload=True, detrend=None, baseline=None)
         return epochs
 
     def upsample_rip(self, raw_rip: mne.io.Raw) -> mne.io.RawArray:
