@@ -208,7 +208,7 @@ class SHHSCardioPreprocessor:
                     continue  # Skip this recording
                 raw_rip = raw_rip.filter(l_freq=0.1, h_freq=4, method="iir", phase="zero-double",
                                          iir_params={"order": 8, "ftype": "butter"})
-                raw_rip = self.upsample_rip(raw_rip)
+                raw_rip = self.upsample_rip(raw_rip, 3.125)
                 raw = raw_rip
                 # Combining ecg and upsampled rip into one raw object
                 if "ECG" in data_types:
@@ -303,19 +303,21 @@ class SHHSCardioPreprocessor:
                             metadata=metadata, preload=True, detrend=None, baseline=None)
         return epochs
 
-    def upsample_rip(self, raw_rip: mne.io.Raw) -> mne.io.RawArray:
+    def upsample_rip(self, raw_rip: mne.io.Raw, factor) -> mne.io.RawArray:
         """
         Creates a new mne.io.Raw object which is upsampled from 10Hz to 125Hz using cubic spline.
         :param raw_rip: the mne.io.Raw object we want to upsample.
+        :param factor: the factor by which we wish to resample the data.
         :return: raw_rip: the raw object reconstructed with upsampled data.
         """
         raw_data = raw_rip.get_data()[0]
         x = np.arange(len(raw_data))
-        n_desired_samples = np.floor(len(raw_data) * 12.5)  # 12.5 upsamples from 10Hz to  125Hz.
-        xc = 0 + np.arange(0, n_desired_samples) * (1/12.5)
+        n_desired_samples = np.floor(len(raw_data) * factor)  # 12.5 upsamples from 10Hz to  125Hz.
+        xc = 0 + np.arange(0, n_desired_samples) * (1/factor)
         cs = scipy.interpolate.CubicSpline(x, raw_data)
         upsampled_data = np.expand_dims(cs(xc), 0)  # Need to add back in the channel dimension
-        info = mne.create_info(raw_rip.info['ch_names'], 125)
+        new_sfreq = 10 * factor
+        info = mne.create_info(raw_rip.info['ch_names'], new_sfreq)
         raw_upsampled = mne.io.RawArray(upsampled_data, info)
 
         return raw_upsampled
@@ -372,6 +374,6 @@ class SHHSCardioPreprocessor:
         return labels
 
 if __name__ == "__main__":
-    os.chdir("C:/Users/alexa/PycharmProjects/4YP")
+    os.chdir("C:/Users/general/PycharmProjects/4YP")
     pre = SHHSCardioPreprocessor()
-    pre.process(["ECG"], incl_preceeding_epochs=0, incl_following_epochs=0)
+    pre.process(["THOR RES"], incl_preceeding_epochs=2, incl_following_epochs=1)
