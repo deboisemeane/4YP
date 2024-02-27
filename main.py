@@ -18,7 +18,7 @@ def main():
     #resample = {"2": 2.84}
 
     data_config = SHHSConfig(split=split, data_type="rip", art_rejection=True, filtering=True, resample=None,
-                             prec_epochs=0, foll_epochs=0)
+                             prec_epochs=2, foll_epochs=1)
     optimiser_config = AdamConfig(lr=0.00003)
 
     trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors_nocontext2, device=device)

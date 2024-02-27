@@ -1,6 +1,6 @@
 import torch
 from scripts import Train, AdamConfig, SHHSConfig
-from src.models import MLP1, Sors, Sors7, Sors_nocontext1, Sors_nocontext2, Sors_dualcnn
+from src.models import MLP1, Sors, Sors7, Sors_nocontext1, Sors_nocontext2, Sors_dualcnn, Sors_largekernels
 import matplotlib.pyplot as plt
 from utils import Timer
 
@@ -17,11 +17,11 @@ def main():
     #split = {"train": 350, "val": 100, "test": 50}
     #resample = {"2": 2.84}
 
-    data_config = SHHSConfig(split=split, data_type="ecg_rip", art_rejection=True, filtering=True, resample=None,
+    data_config = SHHSConfig(split=split, data_type="ecg", art_rejection=True, filtering=True, resample=None,
                              prec_epochs=0, foll_epochs=0)
     optimiser_config = AdamConfig(lr=0.00003)
 
-    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors_dualcnn, device=device)
+    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors_largekernels, device=device)
 
     timer = Timer()
     timer.start()
@@ -37,7 +37,7 @@ def main():
     ax.set_title("CardioExperiment3")
     labels = {"t": "Training", "v": "Validation"}
     trainer.plot_loss(ax=ax, labels=labels)
-    plt.savefig(f'figures/cardio_sors_dualcnn_{split["train"]}-{split["val"]}-{split["test"]}.png')
+    #plt.savefig(f'figures/cardio_sors_dualcnn_{split["train"]}-{split["val"]}-{split["test"]}.png')
 
 
 if __name__ == '__main__':
