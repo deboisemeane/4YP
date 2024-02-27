@@ -64,10 +64,10 @@ class AFNet(nn.Module):
         
         
         #Global max pooling and fully connected layer for classification
-        #x = torch.max(x, 2)[0]
+        x = torch.max(x, 2)[0]
 
         # Trying global average pooling instead
-        x = torch.mean(x, 2)  # Averaging over special dimension produces one value per channel.
+        #x = torch.mean(x, 2)  # Averaging over special dimension produces one value per channel.
 
         x = self.fc1(x)
         #x = f.log_softmax(x, dim=1)
@@ -76,7 +76,7 @@ class AFNet(nn.Module):
 
 
 if __name__ == '__main__':
-    x = torch.zeros((64,1,15000))
+    x = torch.zeros((64,1,3748))
     model = AFNet()
     y = model(x)
     print(y.shape)
