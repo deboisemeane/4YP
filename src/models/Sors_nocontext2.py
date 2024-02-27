@@ -4,6 +4,7 @@ import torch.nn as nn
 
 # This implements a modified version of the model used by Sors et al.
 # It is designed to take feature length 3750 which corresponds to one 30s epoch at 125Hz, i.e. without surrounding context.
+# Alternatively it can take 4 epochs of RIP upsampled to 31.25Hz, giving a feature length of 3748.
 class Sors_nocontext2(nn.Module):
 
     def __init__(self):
@@ -67,7 +68,7 @@ class Sors_nocontext2(nn.Module):
 
 if __name__ == '__main__':
     import numpy as np
-    x_test = np.zeros((64, 1, 3750))
+    x_test = np.zeros((64, 1, 3748))
     x_test = torch.tensor(x_test, dtype=torch.float32)
     model = Sors_nocontext2()
     print(model(x_test).shape)
