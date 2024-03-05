@@ -19,13 +19,13 @@ def main():
 
     data_config = SHHSConfig(split=split, data_type="ecg", art_rejection=True, filtering=True, resample=None,
                              prec_epochs=2, foll_epochs=1)
-    optimiser_config = AdamConfig(lr=0.00003)
+    optimiser_config = AdamConfig(lr=0.00001)
 
     trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors, device=device)
 
     timer = Timer()
     timer.start()
-    trainer.train(n_epochs=12, print_losses=True, weight_losses=False)
+    trainer.train(n_epochs=12, print_losses=True, weight_losses=True)
     time_train = timer.stop()
     print(f"Total training time: {time_train}")
 
