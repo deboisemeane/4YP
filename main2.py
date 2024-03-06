@@ -17,11 +17,11 @@ def main():
     #split = {"train": 350, "val": 100, "test": 50}
     #resample = {"2": 2.84}
 
-    data_config = SHHSConfig(split=split, data_type="ecg", art_rejection=True, filtering=True, resample=None,
-                             prec_epochs=0, foll_epochs=0)
-    optimiser_config = AdamConfig(lr=0.00003)
+    data_config = SHHSConfig(split=split, data_type="ecg", art_rejection=True, filtering=True, resample={"1": 0.533},
+                             prec_epochs=2, foll_epochs=1)
+    optimiser_config = AdamConfig(lr=0.00001)
 
-    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors_nocontext2, device=device)
+    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors, device=device)
 
     timer = Timer()
     timer.start()
