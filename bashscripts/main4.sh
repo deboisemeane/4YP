@@ -4,4 +4,4 @@
 #SBATCH --gres=gpu:1
 
 source ~/miniconda/etc/profile.d/conda.sh
-conda run -n FYP python main4.py
+conda run -n FYP python -u main4.py
