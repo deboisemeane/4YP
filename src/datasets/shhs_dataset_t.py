@@ -7,13 +7,19 @@ from pathlib import Path
 import csv
 
 
-# Custom dataset for handcrafted frequency features.
+# Custom dataset for time series data.
+# Due to memory constraints, this class reads training examples from disk individually.
 class SHHSDataset_t:
 
-    def __init__(self, nsrrids: list[int], data_dir: str):
+    def __init__(self, nsrrids: list[int], data_dir: str, resample=None):
         self.nsrrids = nsrrids
         self.data_dir = data_dir
         self.index_df = self.__create_index_df__()
+
+        # Perform resampling
+        self.resample_factors = resample  # Resample factors should be in a dictionary {"0": f_N3, "1", f_N1N2 ...}
+        if resample is not None:
+            self.resample()
 
         # Find label counts and then class weights (inversely proportional) to be provided to loss criterion.
         classes = [0, 1, 2, 3]
@@ -66,3 +72,19 @@ class SHHSDataset_t:
 
     def __len__(self):
         return self.index_df.shape[0]
+
+    def resample(self):
+        df = self.index_df
+        for stage, factor in self.resample_factors.items():
+            df_current_stage = df[df['labels'] == int(stage)]
+            df_without_current_stage = df[df['labels'] != int(stage)]
+            if factor > 1:
+                replace=True if factor > 2 else False
+                resamples = df_current_stage.sample(frac=factor-1, replace=replace)
+                df = pd.concat([df, resamples], axis=0).reset_index(drop=True)
+            elif 0 < factor < 1:
+                resamples = df_current_stage.sample(frac=factor)
+                df = pd.concat([df_without_current_stage, resamples], axis=0).reset_index(drop=True)
+            else:
+                raise Exception(f"Invalid resample factor {factor} for label {stage}.")
+        self.index_df = df

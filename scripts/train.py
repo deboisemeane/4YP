@@ -100,7 +100,7 @@ class Train:
         self.data_config = data_config
         self.patients = data_config.params["patients"]
         self.data_type = data_config.params["data_type"]
-        self.resample = data_config.params["resample"] if self.data_type == "f" else None
+        self.resample = data_config.params["resample"]
         self.art_rejection = data_config.params["art_rejection"]
         self.lpf = data_config.params["lpf"]
         self.prec_epochs = data_config.params["prec_epochs"]
@@ -114,7 +114,7 @@ class Train:
             self.test_dataset = ISRUCDataset(patients=self.patients["test"])
 
         elif isinstance(data_config, SHHSConfig):
-            self.train_dataset = SHHSDataset_t(nsrrids=self.patients["train"], data_dir=self.data_dir)
+            self.train_dataset = SHHSDataset_t(nsrrids=self.patients["train"], data_dir=self.data_dir, resample=self.resample)
             self.val_dataset = SHHSDataset_t(nsrrids=self.patients["val"], data_dir=self.data_dir)
             self.test_dataset = SHHSDataset_t(nsrrids=self.patients["test"], data_dir=self.data_dir)
 

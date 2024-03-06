@@ -11,13 +11,13 @@ def main():
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Training the MLP on SHHS data
-    #split = {"train": 15, "val": 10, "test": 2}
+    #split = {"train": 10, "val": 0, "test": 0}
     #split = {"train": 1950, "val": 557, "test": 278}
     split = {"train": 1926, "val": 550, "test": 275}
     #split = {"train": 350, "val": 100, "test": 50}
     #resample = {"2": 2.84}
 
-    data_config = SHHSConfig(split=split, data_type="rip", art_rejection=True, filtering=True, resample=None,
+    data_config = SHHSConfig(split=split, data_type="rip", art_rejection=True, filtering=True, resample={"1": 0.533},
                              prec_epochs=2, foll_epochs=1)
     optimiser_config = AdamConfig(lr=0.00003)
 
@@ -25,7 +25,7 @@ def main():
 
     timer = Timer()
     timer.start()
-    trainer.train(n_epochs=12, print_losses=True, weight_losses=True)
+    trainer.train(n_epochs=10, print_losses=True, weight_losses=False)
     time_train = timer.stop()
     print(f"Total training time: {time_train}")
 

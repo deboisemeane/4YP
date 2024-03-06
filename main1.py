@@ -18,15 +18,15 @@ def main():
     #split = {"train": 350, "val": 100, "test": 50}
     #resample = {"2": 2.84}
 
-    data_config = SHHSConfig(split=split, data_type="rip", art_rejection=True, filtering=True, resample=None,
+    data_config = SHHSConfig(split=split, data_type="rip", art_rejection=True, filtering=True, resample={"0":3},
                              prec_epochs=2, foll_epochs=1)
     optimiser_config = AdamConfig(lr=0.00003)
 
-    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=AFNet, device=device)
+    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors_nocontext2, device=device)
 
     timer = Timer()
     timer.start()
-    trainer.train(n_epochs=12, print_losses=True, weight_losses=False)
+    trainer.train(n_epochs=10, print_losses=True, weight_losses=False)
     time_train = timer.stop()
     print(f"Total training time: {time_train}")
 
