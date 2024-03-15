@@ -35,7 +35,7 @@ def main():
 
     # Plotting loss for training with SHHS
     fig, ax = plt.subplots()
-    ax.set_title("CardioExperiment0")
+    ax.set_title("EEG Experiment 1")
     labels = {"t": "Training", "v": "Validation"}
     trainer.plot_loss(ax=ax, labels=labels)
     plt.savefig(f'figures/eeg_experiment_1_{split["train"]}-{split["val"]}-{split["test"]}.png')
