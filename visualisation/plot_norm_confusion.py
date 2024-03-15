@@ -10,7 +10,7 @@ def plot_norm_confusion(confusion, title, cmap='viridis'):
     norm_confusion = np.flip(norm_confusion, axis=1)  # Flip x axis
 
     fig, ax = plt.subplots()
-    cax = ax.imshow(norm_confusion, cmap=cmap)
+    cax = ax.imshow(norm_confusion, cmap=cmap, vmin=0, vmax=1)
 
     # Add a color bar
     plt.colorbar(cax)
