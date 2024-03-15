@@ -189,6 +189,8 @@ class Train:
 
             computation_time = 0
             # Train for one epoch
+            self.model.train()
+
             running_loss = 0.0
             total_samples = 0
             for i, batch in enumerate(self.train_loader):
