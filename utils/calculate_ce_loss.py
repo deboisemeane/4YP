@@ -4,8 +4,9 @@ import torch
 def calculate_ce_loss(model, cross_entropy_criterion, dataloader, device):  # Calculates the average loss over the whole dataset
 
     # This function averages loss correctly if criterion.reduce='mean' i.e. criterion is already averaging over each batch.
-
     criterion = cross_entropy_criterion
+
+    model.eval()
     with torch.no_grad():
         total_loss = 0
         total_correct = 0
