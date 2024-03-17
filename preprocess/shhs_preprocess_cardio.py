@@ -192,7 +192,7 @@ class SHHSCardioPreprocessor:
                     nsrrids_incorrect_sfreq.append(nsrrid)
                     print(f"Nsrrids rejected due to an unexpected sampling rate: {nsrrids_incorrect_sfreq}")
                     continue  # Skip this recording
-                raw_ecg = raw_ecg.filter(l_freq=0.5, h_freq=40, method="iir", phase="zero-double",
+                raw_ecg = raw_ecg.filter(h_freq=40, method="iir", phase="zero-double",
                                          iir_params={"order": 8, "ftype": "butter"})
                 raw = raw_ecg
             else:
