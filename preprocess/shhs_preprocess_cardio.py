@@ -184,6 +184,8 @@ class SHHSCardioPreprocessor:
             patient_path = edfs_dir + "shhs1-" + str(nsrrid) + ".edf"
             raw = None
 
+            epochs_list = []
+
             # Load raw ECG data
             if "ECG" in data_types:
                 raw_ecg = mne.io.read_raw_edf(patient_path, include=["ECG"], preload=True)
@@ -195,6 +197,13 @@ class SHHSCardioPreprocessor:
                 raw_ecg = raw_ecg.filter(l_freq=None, h_freq=40, method="iir", phase="zero-double",
                                          iir_params={"order": 8, "ftype": "butter"})
                 raw = raw_ecg
+
+                # Retrieve stage labels
+                stage = self.load_stage_labels(self, nsrrid, raw)
+
+                # Perform epoching, taking into account our new t_start and t_end.
+                epochs_ecg = self.create_epochs(raw, t_start, t_end, stage)
+                epochs_list.append(epochs_ecg)
             else:
                 raw_ecg = None
 
@@ -210,74 +219,82 @@ class SHHSCardioPreprocessor:
                                          iir_params={"order": 8, "ftype": "butter"})
                 raw_rip = self.upsample_rip(raw_rip, 3.125)
                 raw = raw_rip
-                # Combining ecg and upsampled rip into one raw object
-                if "ECG" in data_types:
-                    raw_data = np.concatenate((raw_ecg.get_data(), raw_rip.get_data()), 0)
-                    info = mne.create_info(['ECG', 'THOR RES'], 125)
-                    raw = mne.io.RawArray(raw_data, info)
+
+                # Retrieve stage labels
+                stage = self.load_stage_labels(self, nsrrid, raw)
+
+                # Perform epoching, taking into account our new t_start and t_end.
+                epochs_rip = self.create_epochs(raw, t_start, t_end, stage)
+                epochs_list.append(epochs_rip)
             else:
                 raw_rip = None
 
             print(f"Nsrrids rejected due to an unexpected sampling rate: {nsrrids_incorrect_sfreq}")
 
-            # Retrieve stage labels
-            stage = self.load_stage_labels(self, nsrrid, raw)
-
-            # Perform epoching, taking into account our new t_start and t_end.
-            epochs = self.create_epochs(raw, t_start, t_end, stage)
-
             # Save to npy file
-            if "ECG" in data_types:
-                if "THOR RES" in data_types:
-                    data_type = "ecg_rip"
-                else:
-                    data_type = "ecg"
+            self.save_features_labels_npy(nsrrid, epochs_list, incl_preceeding_epochs, incl_following_epochs, data_types)
+
+    def save_features_labels_npy(self, nsrrid, epochs_list: list,
+                                 incl_preceeding_epochs: int, incl_following_epochs: int, data_types: list[str]):
+
+        if "ECG" in data_types:
+            if "THOR RES" in data_types:
+                data_type = "ecg_rip"
             else:
-                data_type = "rip"
+                data_type = "ecg"
+        else:
+            data_type = "rip"
 
-            self.save_features_labels_npy(nsrrid, epochs, incl_preceeding_epochs, incl_following_epochs, data_type)
-
-    def save_features_labels_npy(self, nsrrid, epochs: mne.Epochs,
-                                 incl_preceeding_epochs: int, incl_following_epochs: int, data_type: str):
         data_dir = get_data_dir_shhs(data_type=data_type, art_rejection=True, filtering=True,
                                      prec_epochs=incl_preceeding_epochs, foll_epochs=incl_following_epochs)
+
         if np.logical_not(os.path.isdir(data_dir)):
             os.makedirs(data_dir)
 
-        # Construct time domain features
-        data = epochs.get_data(copy=False)
-        stage = epochs.metadata["Sleep Stage"]
-        n_epochs, n_samples_per_epoch = data.shape[0], data.shape[2]
+
         features = []
         labels = []
 
-        for i in range(n_epochs):
+        for epochs in epochs_list:
 
-            # Check that this epoch has a label
-            if np.isnan(stage[i]):  # Converting stage list to dataframe converted None -> nan
-                continue  # Skip this epoch if it doesn't have a label.
+            # Construct time domain features
+            data = epochs.get_data(copy=False)
+            stage = epochs.metadata["Sleep Stage"]
+            n_epochs, n_samples_per_epoch = data.shape[0], data.shape[2]
+            curr_features = []
+            curr_labels = []
 
-            # Check that the required preceeding and following epochs are present
-            start_idx = i - incl_preceeding_epochs
-            end_idx = i + incl_following_epochs + 1
-            if start_idx < 0 or end_idx > n_epochs:
-                continue  # Skip this epoch if too close to edges of recording.
+            for i in range(n_epochs):
 
-            # Check if we have more than one channel (ecg and rip) in which case we are flattening out the channel dimension and
-            # saving ecg and rip together in the same row for each example, ecg the first 3750 entries, rip the next 3750
-            if data.shape[1] > 1:
-                features.append(np.concatenate((data[start_idx:end_idx, 0, :].flatten(), data[start_idx:end_idx, 1, :].flatten())))
-            else:
-                features.append(data[start_idx:end_idx, :, :].flatten())
+                # Check that this epoch has a label
+                if np.isnan(stage[i]):  # Converting stage list to dataframe converted None -> nan
+                    continue  # Skip this epoch if it doesn't have a label.
 
-            labels.append(stage[i])
+                # Check that the required preceeding and following epochs are present
+                start_idx = i - incl_preceeding_epochs
+                end_idx = i + incl_following_epochs + 1
+                if start_idx < 0 or end_idx > n_epochs:
+                    continue  # Skip this epoch if too close to edges of recording.
 
-        features = np.array(features)
-        labels = np.expand_dims(np.array(labels), 1)
+                curr_features.append(data[start_idx:end_idx, :, :].flatten())
 
-        # Save to dataframe
-        data = np.concatenate((features, labels), axis=1)
-        data = np.float32(data)  # Float32 takes less space compared to float64
+                curr_labels.append(stage[i])
+
+            curr_features = np.array(curr_features)
+            features.append(curr_features)
+            curr_labels = np.expand_dims(np.array(curr_labels), 1)
+            labels.append(curr_labels)
+
+        # Concatenate data along dimension 0 in the order of ECG, RIP, HR
+        features = np.concatenate(features, axis=1)
+
+        # Check labels match up and concatentate to end
+        if len(labels) > 1:
+            assert False not in (labels[0] == labels [1])
+        data = np.concatenate((features, labels[0]), axis=1)
+
+        # Save to npy
+        data = np.float32(data)  # Float32 takes less space compared to float64 and is used by Pytorch
         np.save(file=data_dir / f"nsrrid_{nsrrid}",
                 arr=data,
                 allow_pickle=False)
