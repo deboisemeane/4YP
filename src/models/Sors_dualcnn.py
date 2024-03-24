@@ -5,7 +5,10 @@ import torch.nn.functional as F
 
 class Sors_dualcnn(nn.Module):
     """
-    Class intended to take x where the first 3750 items are the ecg samples, the next 3750 are upsampled rip for the same epoch.
+    Class intended to take x where the first 15000 items are the ecg samples, the next 3748 are upsampled rip for the same epoch.
+    120s ECG at 125Hz = 15000
+    120s RIP at 31.25Hz = 3748
+    Total feature length = 18748
     """
     def __init__(self):
         super(Sors_dualcnn, self).__init__()
@@ -21,8 +24,8 @@ class Sors_dualcnn(nn.Module):
         self.ecg_conv8 = nn.Conv1d(256, 256, 5, 2, padding=2)
         self.ecg_conv9 = nn.Conv1d(256, 256, 5, 2, padding=2)
         self.ecg_conv10 = nn.Conv1d(256, 256, 5, 2, padding=1)
-        self.ecg_conv11 = nn.Conv1d(256, 256, 3, 1, padding=1)
-        self.ecg_conv12 = nn.Conv1d(256, 256, 3, 1, padding=1)
+        self.ecg_conv11 = nn.Conv1d(256, 256, 3, 2, padding=1)
+        self.ecg_conv12 = nn.Conv1d(256, 256, 3, 2, padding=1)
         # Batch Normalisation
         self.ecg_norm0 = nn.BatchNorm1d(1)
         self.ecg_norm1 = nn.BatchNorm1d(128)
@@ -50,7 +53,7 @@ class Sors_dualcnn(nn.Module):
         self.rip_conv9 = nn.Conv1d(256, 256, 5, 2, padding=2)
         self.rip_conv10 = nn.Conv1d(256, 256, 5, 2, padding=1)
         self.rip_conv11 = nn.Conv1d(256, 256, 3, 1, padding=1)
-        self.rip_conv12 = nn.Conv1d(256, 256, 3, 1, padding=1)
+        self.rip_conv12 = nn.Conv1d(256, 256, 3, 1)
         # Batch Normalisation
         self.rip_norm0 = nn.BatchNorm1d(1)
         self.rip_norm1 = nn.BatchNorm1d(128)
@@ -74,8 +77,8 @@ class Sors_dualcnn(nn.Module):
         R = nn.LeakyReLU(0.1)
 
         # Split the input
-        ecg = x[:, :, :3750]  # ECG data with shape (batch_size, 1, 3750)
-        rip = x[:, :, 3750:]  # RIP data with shape (batch_size, 1, 3750)
+        ecg = x[:, :, :15000]  # ECG data with shape (batch_size, 1, 15000)
+        rip = x[:, :, 15000:]  # RIP data with shape (batch_size, 1, 3748)
 
         # Process ECG data
         ecg = R(self.ecg_norm1(self.ecg_conv1(self.ecg_norm0(ecg))))
@@ -119,7 +122,7 @@ class Sors_dualcnn(nn.Module):
 # Example use
 if __name__ == '__main__':
     import numpy as np
-    x_test = np.zeros((64, 1, 7500))
+    x_test = np.zeros((64, 1, 18748))
     x_test = torch.tensor(x_test, dtype=torch.float32)
     model = Sors_dualcnn()
     print(model(x_test).shape)
