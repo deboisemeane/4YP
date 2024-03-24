@@ -1,6 +1,6 @@
 import torch
 from scripts import Train, AdamConfig, SHHSConfig
-from src.models import MLP1, Sors, Sors7, Sors_nocontext1, Sors_nocontext2, Sors_cardiocnn
+from src.models import MLP1, Sors, Sors7, Sors_nocontext1, Sors_nocontext2, Sors_cardiocnn, Sors_dualcnn
 import matplotlib.pyplot as plt
 from utils import Timer
 
@@ -17,15 +17,15 @@ def main():
     #split = {"train": 350, "val": 100, "test": 50}
     #resample = {"2": 2.84}
 
-    data_config = SHHSConfig(split=split, data_type="ecg", art_rejection=True, filtering=True, resample={"1": 0.533},
+    data_config = SHHSConfig(split=split, data_type="ecg_rip", art_rejection=True, filtering=True, resample=None,
                              prec_epochs=2, foll_epochs=1)
     optimiser_config = AdamConfig(lr=0.0003)
 
-    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors, device=device)
+    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors_dualcnn, device=device)
 
     timer = Timer()
     timer.start()
-    trainer.train(n_epochs=12, print_losses=True, weight_losses=False)
+    trainer.train(n_epochs=12, print_losses=True, weight_losses=True)
     time_train = timer.stop()
     print(f"Total training time: {time_train}")
 
