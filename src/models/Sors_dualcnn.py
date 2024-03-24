@@ -25,7 +25,7 @@ class Sors_dualcnn(nn.Module):
         self.ecg_conv9 = nn.Conv1d(256, 256, 5, 2, padding=2)
         self.ecg_conv10 = nn.Conv1d(256, 256, 5, 2, padding=1)
         self.ecg_conv11 = nn.Conv1d(256, 256, 3, 2, padding=1)
-        self.ecg_conv12 = nn.Conv1d(256, 256, 3, 2, padding=1)
+        self.ecg_conv12 = nn.Conv1d(256, 256, 3, 2,)
         # Batch Normalisation
         self.ecg_norm0 = nn.BatchNorm1d(1)
         self.ecg_norm1 = nn.BatchNorm1d(128)
@@ -53,7 +53,7 @@ class Sors_dualcnn(nn.Module):
         self.rip_conv9 = nn.Conv1d(256, 256, 5, 2, padding=2)
         self.rip_conv10 = nn.Conv1d(256, 256, 5, 2, padding=1)
         self.rip_conv11 = nn.Conv1d(256, 256, 3, 1, padding=1)
-        self.rip_conv12 = nn.Conv1d(256, 256, 3, 1)
+        self.rip_conv12 = nn.Conv1d(256, 256, 3, 1, padding=1)
         # Batch Normalisation
         self.rip_norm0 = nn.BatchNorm1d(1)
         self.rip_norm1 = nn.BatchNorm1d(128)
@@ -70,7 +70,7 @@ class Sors_dualcnn(nn.Module):
         self.rip_norm12 = nn.BatchNorm1d(256)
 
         # Define the MLP with the adjusted input size
-        self.fc1 = nn.Linear(1280, 100)
+        self.fc1 = nn.Linear(1536, 100)
         self.fc2 = nn.Linear(100, 4)
 
     def forward(self, x):
