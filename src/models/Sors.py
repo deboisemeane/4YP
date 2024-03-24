@@ -26,7 +26,7 @@ class Sors(nn.Module):
         self.conv10 = nn.Conv1d(256, 256, 5, 2, padding=padding3)
         self.conv11 = nn.Conv1d(256, 256, 3, 2, padding=padding3)
         self.conv12 = nn.Conv1d(256, 256, 3, 2)
-        self.fc1 = nn.Linear(768, 100)
+        self.fc1 = nn.Linear(1024, 100)
         self.fc2 = nn.Linear(100, 4)
 
         # Batch Normalisation
@@ -67,7 +67,7 @@ class Sors(nn.Module):
 
 if __name__ == '__main__':
     import numpy as np
-    x_test = np.zeros((64, 1, 15000))
+    x_test = np.zeros((64, 1, 18748))
     x_test = torch.tensor(x_test, dtype=torch.float32)
     model = Sors()
     print(model(x_test).shape)
