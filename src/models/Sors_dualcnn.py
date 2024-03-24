@@ -70,7 +70,7 @@ class Sors_dualcnn(nn.Module):
         self.rip_norm12 = nn.BatchNorm1d(256)
 
         # Define the MLP with the adjusted input size
-        self.fc1 = nn.Linear(1536, 100)
+        self.fc1 = nn.Linear(1280, 100)
         self.fc2 = nn.Linear(100, 4)
 
     def forward(self, x):
