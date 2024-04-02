@@ -20,7 +20,7 @@ Args:
 def get_data_dir_shhs(data_type: str, art_rejection: bool, filtering: bool, prec_epochs: int, foll_epochs: int):
     # Check if we're on the IBME cluster
     if Path('/data/wadh6184/').is_dir():
-        root_dir = '/data/wadh6184/'
+        root_dir = Path("/data/wadh6184/")
     # Otherwise use local directory for processed data
     else:
         root_dir = Path(__file__).parent.parent
