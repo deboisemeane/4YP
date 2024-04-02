@@ -1,4 +1,5 @@
 from pathlib import Path
+
 """
 # Function to get the data directory for processed data, depending on parameters such as data type,
 # Whether artefact rejection was used, whether filtering was applied.
@@ -17,7 +18,12 @@ Args:
 
 
 def get_data_dir_shhs(data_type: str, art_rejection: bool, filtering: bool, prec_epochs: int, foll_epochs: int):
-    root_dir = Path(__file__).parent.parent
+    # Check if we're on the IBME cluster
+    if Path('/data/wadh6184/').is_dir():
+        root_dir = '/data/wadh6184/'
+    # Otherwise use local directory for processed data
+    else:
+        root_dir = Path(__file__).parent.parent
     data_dir = root_dir / "data/Processed/shhs/"
 
     if data_type in ["f", "t"]:
