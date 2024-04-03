@@ -6,7 +6,7 @@ from pathlib import Path
 
 Args:
     data_type (str): defines whether the data is frequency based eeg features ("f"), time series eeg ("t"), 
-        thorax rip ("rip"), ecg ("ecg") or both ("ecg_rip").
+        thorax rip ("rip"), ecg ("ecg"), both ("ecg_rip"), or thorax rip and heart rate ("rip_hr")
     art_rejection (bool): whether or not Yasa's std-based artefact rejection for eeg was applied. For cardiorespiratory
         signals this refers to recording trimming/rejection based on pulseox HR. It is assumed to be true and the value not used.
     filtering (bool): whether or not filtering was applied (LPF for EEG and RIP, BPF for ECG). It is assumed to be true
@@ -34,7 +34,7 @@ def get_data_dir_shhs(data_type: str, art_rejection: bool, filtering: bool, prec
             data_dir = data_dir / "Time_Features/"
             data_dir = data_dir / f"art_rejection_{int(art_rejection)}_lpf_{int(filtering)}_prec{prec_epochs}_foll{foll_epochs}/"
 
-    elif data_type in ["ecg", "rip", "ecg_rip"]:
+    elif data_type in ["ecg", "rip", "ecg_rip", "rip_hr"]:
         data_dir = data_dir / "Cardiorespiratory" / f"{data_type}_prec{prec_epochs}_foll{foll_epochs}"
 
     else:

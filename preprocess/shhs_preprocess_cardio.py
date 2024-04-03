@@ -14,7 +14,13 @@ from utils import get_data_dir_shhs
 class SHHSCardioPreprocessor:
 
     def __init__(self):
-        self.demographics = pd.read_csv('data/Raw/shhs/datasets/shhs-harmonized-dataset-0.20.0.csv')
+        # Check if we're on the IBME cluster
+        if Path('/data/wadh6184/').is_dir():
+            self.root_dir = Path("/data/wadh6184/")
+        # Otherwise use local directory for processed data
+        else:
+            self.root_dir = Path(__file__).parent.parent
+        self.demographics = pd.read_csv(self.root_dir / 'data/Raw/shhs/datasets/shhs-harmonized-dataset-0.20.0.csv')
         self.choose_patients()  # Updates demographics DataFrame to only include acceptable examples.
         self.recordings_rejected = 0  # Recordings rejected due to equipment removal >5minutes long in the middle of the night.
         self.epochs_removed = []  # In the recordings that weren't rejected, how many 30s epochs have been excluded?
@@ -28,10 +34,10 @@ class SHHSCardioPreprocessor:
         df = df[chosen_patients]
 
         # Check edf file is available for chosen patients.
-        edfs_dir = 'data/Raw/shhs/polysomnography/edfs/shhs1/'
+        edfs_dir = self.root_dir / 'data/Raw/shhs/polysomnography/edfs/shhs1/'
         unavailable_edf_indeces = []
         for i, nsrrid in enumerate(df["nsrrid"]):
-            edf_path = edfs_dir + "shhs1-" + str(nsrrid) + ".edf"
+            edf_path = edfs_dir / f"shhs1-{nsrrid}.edf"
             if np.logical_not(os.path.isfile(edf_path)):
                 unavailable_edf_indeces.append(i)
                 print(f"EDF not available for nsrrid {nsrrid}.")
@@ -43,8 +49,8 @@ class SHHSCardioPreprocessor:
     # Function to give a new start and end time based on equipment disconnections.
     # If there is equipment disconnect >5 minutes long, not at the start or end, then the whole recording is thown out.
     def remove_equipment_disconnect(self, nsrrid):
-        edfs_dir = 'data/Raw/shhs/polysomnography/edfs/shhs1/'
-        patient_path = edfs_dir + "shhs1-" + str(nsrrid) + ".edf"
+        edfs_dir = self.root_dir / 'data/Raw/shhs/polysomnography/edfs/shhs1/'
+        patient_path = edfs_dir / f"shhs1-{nsrrid}.edf"
         # Load channels separately due to differing sampling rates, otherwise MNE will resample lower sampling rates.
         (position, times) = mne.io.read_raw_edf(patient_path, include=["POSITION"]).get_data(return_times=True)
         hr = mne.io.read_raw_edf(patient_path, include=["H.R."]).get_data(return_times=True)[0]
@@ -179,9 +185,9 @@ class SHHSCardioPreprocessor:
             if t_start is None:
                 continue
             # Load raw edf
-            assert "THOR RES" in data_types or "ECG" in data_types, "Invalid requested channels."
-            edfs_dir = 'data/Raw/shhs/polysomnography/edfs/shhs1/'
-            patient_path = edfs_dir + "shhs1-" + str(nsrrid) + ".edf"
+            assert "THOR RES" in data_types or "ECG" in data_types or "H.R." in data_types, "Invalid requested channels."
+            edfs_dir = self.root_dir / 'data/Raw/shhs/polysomnography/edfs/shhs1/'
+            patient_path = edfs_dir / f"shhs1-{nsrrid}.edf"
             raw = None
 
             epochs_list = []
@@ -229,6 +235,28 @@ class SHHSCardioPreprocessor:
             else:
                 raw_rip = None
 
+            # Load raw respiratory data
+            if "H.R." in data_types:
+                raw_hr = mne.io.read_raw_edf(patient_path, include=["H.R."], preload=True)
+                # Check correct sampling rate
+                if raw_hr.info["sfreq"] != 1:
+                    nsrrids_incorrect_sfreq.append(nsrrid)
+                    print(f"Nsrrids rejected due to an unexpected sampling rate: {nsrrids_incorrect_sfreq}")
+                    continue  # Skip this recording
+                #raw_hr = raw_hr.filter(l_freq=0.1, h_freq=4, method="iir", phase="zero-double",
+                #                         iir_params={"order": 8, "ftype": "butter"})
+                #raw_hr = self.upsample_rip(raw_hr, 3.125)
+                raw = raw_hr
+
+                # Retrieve stage labels
+                stage = self.load_stage_labels(self, nsrrid, raw)
+
+                # Perform epoching, taking into account our new t_start and t_end.
+                epochs_hr = self.create_epochs(raw, t_start, t_end, stage)
+                epochs_list.append(epochs_hr)
+            else:
+                raw_hr = None
+
             print(f"Nsrrids rejected due to an unexpected sampling rate: {nsrrids_incorrect_sfreq}")
 
             # Save to npy file
@@ -237,20 +265,21 @@ class SHHSCardioPreprocessor:
     def save_features_labels_npy(self, nsrrid, epochs_list: list,
                                  incl_preceeding_epochs: int, incl_following_epochs: int, data_types: list[str]):
 
-        if "ECG" in data_types:
-            if "THOR RES" in data_types:
+        if "THOR RES" in data_types:
+            if "ECG" in data_types:
                 data_type = "ecg_rip"
+            elif "H.R." in data_types:
+                data_type = "rip_hr"
             else:
-                data_type = "ecg"
+                data_type = "rip"
         else:
-            data_type = "rip"
+            data_type = "ecg"
 
         data_dir = get_data_dir_shhs(data_type=data_type, art_rejection=True, filtering=True,
                                      prec_epochs=incl_preceeding_epochs, foll_epochs=incl_following_epochs)
 
         if np.logical_not(os.path.isdir(data_dir)):
             os.makedirs(data_dir)
-
 
         features = []
         labels = []
@@ -290,7 +319,7 @@ class SHHSCardioPreprocessor:
 
         # Check labels match up and concatentate to end
         if len(labels) > 1:
-            assert False not in (labels[0] == labels [1])
+            assert False not in (labels[0] == labels [1]), "Labels from different data types don't match up."
         data = np.concatenate((features, labels[0]), axis=1)
 
         # Save to npy
@@ -391,6 +420,6 @@ class SHHSCardioPreprocessor:
         return labels
 
 if __name__ == "__main__":
-    os.chdir("C:/Users/general/PycharmProjects/4YP")
+    os.chdir("C:/Users/Alex/PycharmProjects/4YP")
     pre = SHHSCardioPreprocessor()
-    pre.process(["THOR RES"], incl_preceeding_epochs=2, incl_following_epochs=1)
+    pre.process(["THOR RES", "H.R."], incl_preceeding_epochs=2, incl_following_epochs=1)
