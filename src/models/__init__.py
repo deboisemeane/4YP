@@ -7,3 +7,4 @@ from .Sors_cardiocnn import Sors_cardiocnn
 from .Sors_dualcnn import Sors_dualcnn
 from .Sors_largekernels import Sors_largekernels
 from .Sors_hr import Sors_hr
+from .Sors_rip_hr import Sors_rip_hr
