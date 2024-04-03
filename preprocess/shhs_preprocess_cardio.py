@@ -375,7 +375,7 @@ class SHHSCardioPreprocessor:
         n_epochs = total_duration // 30 + 1  # +1 because the last epoch is less than 30s, but we want to include it
         labels = [None] * int(n_epochs)
         # Create path string for current patient.
-        annotations_path = f"data/Raw/shhs/polysomnography/annotations-events-nsrr/shhs1/shhs1-{nsrrid}-nsrr.xml"
+        annotations_path = self.root_dir / f"data/Raw/shhs/polysomnography/annotations-events-nsrr/shhs1/shhs1-{nsrrid}-nsrr.xml"
         # Check the annotations file is available for this patient.
         if os.path.isfile(annotations_path):
             annotations = ET.parse(annotations_path)
