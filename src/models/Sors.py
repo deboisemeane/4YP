@@ -26,7 +26,7 @@ class Sors(nn.Module):
         self.conv10 = nn.Conv1d(256, 256, 5, 2, padding=padding3)
         self.conv11 = nn.Conv1d(256, 256, 3, 2, padding=padding3)
         self.conv12 = nn.Conv1d(256, 256, 3, 2)
-        self.fc1 = nn.Linear(1024, 100)
+        self.fc1 = nn.Linear(768, 100)
         self.fc2 = nn.Linear(100, 4)
 
         # Batch Normalisation

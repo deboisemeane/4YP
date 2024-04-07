@@ -42,7 +42,7 @@ class ISRUCConfig(DataConfig):
     def __init__(self, patients, resample=None, **kwargs):
         super().__init__(patients=patients, resample=resample, data_type="f", **kwargs)
         # patients : dict containing ISRUC patient numbers for "train", "val", "test" datasets.
-        # resample : dict containing resample factors for each class "0", "1", "2", "3"
+        # resample : dict containing resample factors for each class "0"(N3), "1"(N1/N2), "2"(REM), "3"(W)
         # !!Resampling should only be applied to the training dataset!!
 
 
@@ -113,13 +113,13 @@ class Train:
             self.val_dataset = ISRUCDataset(patients=self.patients["val"])
             self.test_dataset = ISRUCDataset(patients=self.patients["test"])
 
-        elif isinstance(data_config, SHHSConfig):
+        else:
             self.train_dataset = SHHSDataset_t(nsrrids=self.patients["train"], data_dir=self.data_dir, resample=self.resample)
             self.val_dataset = SHHSDataset_t(nsrrids=self.patients["val"], data_dir=self.data_dir)
             self.test_dataset = SHHSDataset_t(nsrrids=self.patients["test"], data_dir=self.data_dir)
 
-        elif isinstance(data_config, SHHSConfig) and self.data_type == "f":
-            raise ValueError("We are no longer working with frequency features.")
+        #elif isinstance(data_config, SHHSConfig) and self.data_type == "f":
+        #    raise ValueError("We are no longer working with frequency features.")
             # self.train_dataset = SHHSDataset_f(nsrrids=self.patients["train"], data_dir=self.data_dir, resample=self.resample)
             # self.val_dataset = SHHSDataset_f(nsrrids=self.patients["val"], data_dir=self.data_dir)
             # self.test_dataset = SHHSDataset_f(nsrrids=self.patients["test"], data_dir=self.data_dir)
