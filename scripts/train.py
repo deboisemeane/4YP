@@ -152,7 +152,16 @@ class Train:
             raise ValueError("Unsupported optimiser configuration.")
         return optimiser
 
-    def train(self, n_epochs, print_losses=True, weight_losses=True):
+    def train(self, n_epochs, print_losses=True, weight_losses=True, weight_scalings=None):
+        """
+
+        :param n_epochs:
+        :param print_losses:
+        :param weight_losses: Bool whether to weight the losses at all for class imbalance.
+        :param weight_scalings: Optional to scale the loss weightings by desired amounts
+                                e.g. double N1/N2 weighting: torch.tensor([n3 n1/n2 rem w])
+        :return:
+        """
         # Set the timer we will use for time measurements
         timer = Timer()
 
@@ -165,7 +174,7 @@ class Train:
         print(f"Model being used: {self.model}")
         print(f"Data type: {self.data_type}")
         # Set criterion weight based on inverse of class sizes in the training data.
-        weight = self.train_dataset.weight.to(self.device) if weight_losses is True else None
+        weight = (self.train_dataset.weight * weight_scalings).to(self.device) if weight_losses is True else None
         print(f"Class counts in training data: {self.train_dataset.label_counts}")
         if weight_losses is True:
             print(f"Weighting loss: {weight}")
