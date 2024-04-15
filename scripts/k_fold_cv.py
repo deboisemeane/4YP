@@ -61,17 +61,17 @@ class KFoldConfig(DataConfig):
 
             if equal_split == "train":
                 split_train = equal_nsrrids
-                n_test = int(np.floor(len(other_nsrrids) * split["test"]))
+                n_test = int(np.floor(n_total * split["test"]))
                 split_test = other_nsrrids[:n_test]
                 split_val = other_nsrrids[n_test:]
             elif equal_split == "test":
                 split_test = equal_nsrrids
-                n_train = int(np.floor(len(other_nsrrids) * split["train"]))
+                n_train = int(np.floor(n_total * split["train"]))
                 split_train = other_nsrrids[:n_train]
                 split_val = other_nsrrids[n_train:]
             else:  # equal_split == "val"
                 split_val = equal_nsrrids
-                n_train = int(np.floor(len(other_nsrrids) * split["train"]))
+                n_train = int(np.floor(n_total * split["train"]))
                 split_train = other_nsrrids[:n_train]
                 split_test = other_nsrrids[n_train:]
 
