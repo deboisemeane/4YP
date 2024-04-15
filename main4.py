@@ -19,14 +19,14 @@ def main():
     split = {"train": 0.7, "val": 0.2, "test": 0.1}
 
     data_config = KFoldConfig(k=5, split=split, data_type="rip_hr", art_rejection=True, filtering=True, resample=None,
-                             prec_epochs=2, foll_epochs=1)
+                             prec_epochs=2, foll_epochs=1, equal_split="val")
     optimiser_config = AdamConfig(lr=0.0003)
 
     #trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors, device=device)
     kfoldcv = KFold_CV(data_config, optimiser_config, device, Sors_rip_hr)
     timer = Timer()
     timer.start()
-    kfoldcv.cross_validate(n_epochs=12, print_losses=True, weight_losses=True)
+    kfoldcv.cross_validate(n_epochs=12, print_losses=True, weight_losses=True, weight_scalings=torch.tensor([1, 2, 1, 1]))
     time_train = timer.stop()
     print(f"Total training time: {time_train}")
 
