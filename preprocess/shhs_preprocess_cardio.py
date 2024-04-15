@@ -129,23 +129,33 @@ class SHHSCardioPreprocessor:
         disconnect_times = [five_minute_segments[i] for i in disconnect_indices]
         reconnect_indices = [index for (index, item) in enumerate(disconnect_diff) if item == -1]
         reconnect_times = [five_minute_segments[i] for i in reconnect_indices]
-        """if middle_disconnected: #or end_disconnected:
+
+        """
+        if middle_disconnected or end_disconnected or start_disconnected:
             fig, ax = plt.subplots()
             fig1, ax1 = plt.subplots()
             ax.plot(position.squeeze())
-            ax1.plot(hr.squeeze())
+            x = np.arange(len(hr.squeeze())) / (60*60)
+            y = hr.squeeze()
+            ax1.plot(x, y, color='r', label='HR', linewidth=0.7)
+            ax1.set_xlabel("Time (hrs)")
+            ax1.set_ylabel("Heart Rate (bpm)")
             if t_start is not None:
-                ax1.axvline(t_start, color='r', label='Start/End')
-                ax1.axvline(t_end, color='r')
+                ax1.axvline(t_start/(60*60), color='k', label='Start/End', linewidth=2)
+                ax1.axvline(t_end/(60*60), color='k', linewidth=2)
+            
             for i,t in enumerate(disconnect_times):
                 label = 'Disconnections' if i == 0 else None
                 ax1.axvline(t, color='y', linewidth=1, label=label)
             for i,t in enumerate(reconnect_times):
                 label = 'Reconnections' if i == 0 else None
                 ax1.axvline(t, color='g', linewidth=1, label=label)
+            
             ax1.legend()
+            plt.show()
             print("visualised")
-            plt.close("all")"""
+            plt.close("all")
+        """
         if middle_disconnected:
             self.recordings_rejected += 1
         else:
@@ -200,8 +210,30 @@ class SHHSCardioPreprocessor:
                     nsrrids_incorrect_sfreq.append(nsrrid)
                     print(f"Nsrrids rejected due to an unexpected sampling rate: {nsrrids_incorrect_sfreq}")
                     continue  # Skip this recording
-                raw_ecg = raw_ecg.filter(l_freq=None, h_freq=40, method="iir", phase="zero-double",
+
+                #Visualise
+                """
+                f_s = raw_ecg.info["sfreq"]
+                fig, ax = plt.subplots()
+                # Compute frequency response
+                ax.set_xlim(int(1429000/125), int(1440000/125))  # Set x-axis limits to show 30 seconds
+                ax.set_xlabel("Time (seconds)")
+                ax.set_ylabel("ECG")
+                raw_data = raw_ecg.get_data().squeeze()
+                ax.plot(np.arange(len(raw_data)) / f_s, raw_data, label="Raw", color='k')
+                """
+                # Filter
+                raw_ecg = raw_ecg.filter(l_freq=0.5, h_freq=40, method="iir", phase="zero-double",
                                          iir_params={"order": 8, "ftype": "butter"})
+                # Visualise
+                """
+                filtered_data = raw_ecg.get_data().squeeze()
+                ax.plot(np.arange(len(filtered_data)) / f_s, filtered_data, label="Filtered", color='r')
+                ax.legend()
+                plt.show()
+                plt.close("all")
+                """
+
                 raw = raw_ecg
 
                 # Retrieve stage labels
@@ -221,8 +253,28 @@ class SHHSCardioPreprocessor:
                     nsrrids_incorrect_sfreq.append(nsrrid)
                     print(f"Nsrrids rejected due to an unexpected sampling rate: {nsrrids_incorrect_sfreq}")
                     continue  # Skip this recording
+
+                # Visualisation
+                """
+                f_s = raw_rip.info["sfreq"]
+                fig, ax = plt.subplots()
+                # Compute frequency response
+                ax.set_xlim(0, 30)  # Set x-axis limits to show 30 seconds
+                ax.set_xlabel("Time (seconds)")
+                ax.set_ylabel("Thorax RIP")
+                raw_data = raw_rip.get_data().squeeze()
+                ax.plot(np.arange(len(raw_data))/f_s, raw_data, label="Raw", color='k')
+                """
+                # Filter
                 raw_rip = raw_rip.filter(l_freq=0.1, h_freq=4, method="iir", phase="zero-double",
                                          iir_params={"order": 8, "ftype": "butter"})
+                """
+                filtered_data = raw_rip.get_data().squeeze()
+                ax.plot(np.arange(len(filtered_data))/f_s, filtered_data, label="Filtered", color='r')
+                ax.legend()
+                plt.show()
+                plt.close("all")
+                """
                 raw_rip = self.upsample_rip(raw_rip, 3.125)
                 raw = raw_rip
 
@@ -422,4 +474,4 @@ class SHHSCardioPreprocessor:
 if __name__ == "__main__":
     os.chdir("C:/Users/Alex/PycharmProjects/4YP")
     pre = SHHSCardioPreprocessor()
-    pre.process(["THOR RES", "H.R."], incl_preceeding_epochs=2, incl_following_epochs=1)
+    pre.process(["THOR RES", "ECG"], incl_preceeding_epochs=2, incl_following_epochs=1)
