@@ -2,7 +2,7 @@ import mne
 import os
 import numpy as np
 import pandas as pd
-
+import matplotlib.pyplot as plt
 import xml.etree.ElementTree as ET
 from pathlib import Path
 import yasa
@@ -18,12 +18,18 @@ class SHHSPreprocessor:
                           "lpf_cutoff": 30,
                           "feature_bin_freqwidth": 1,
                           "n_features": 20,
-                          "art_rejection": False
+                          "art_rejection": True
                           }
         self.params = default_params
         self.params.update(params)
 
-        self.demographics = pd.read_csv('data/Raw/shhs/datasets/shhs-harmonized-dataset-0.20.0.csv')
+        # Check if we're on the IBME cluster
+        if Path('/data/wadh6184/').is_dir():
+            self.root_dir = Path("/data/wadh6184/")
+        # Otherwise use local directory for processed data
+        else:
+            self.root_dir = Path(__file__).parent.parent
+        self.demographics = pd.read_csv(self.root_dir / 'data/Raw/shhs/datasets/shhs-harmonized-dataset-0.20.0.csv')
         self.choose_patients()  # Updates demographics DataFrame to only include acceptable examples.
 
     # Generates and saves to npy time domain inputs and labels.
@@ -72,8 +78,11 @@ class SHHSPreprocessor:
 
             lpf_epochs = self.create_epochs(raw_eeg, stage)
             freqs, fft_data = self.apply_hamming_fft(self, lpf_epochs)
+            #avg_stage_power_fractions, power_fractions = self.get_power_fractions(freqs, fft_data, lpf_epochs)
+            #self.plot_power_fractions(avg_stage_power_fractions)
+
             feature_freqs, features = self.select_freq_features(freqs, fft_data)
-            self.save_f_features_labels_csv(nsrrid, features, lpf_epochs)
+            self.save_f_features_labels(nsrrid, features, lpf_epochs)
 
         if art_rejection is True:
             print(f"{rejections} recordings rejected due to >2% of epochs being artefacts.")
@@ -88,10 +97,10 @@ class SHHSPreprocessor:
         chosen_patients = np.logical_and(full_scoring, acceptable_ahi, first_visit)
         df = df[chosen_patients]
         # Check eeg data is available for chosen patients.
-        edfs_dir = 'data/Raw/shhs/polysomnography/edfs/shhs1/'
+        edfs_dir = self.root_dir / 'data/Raw/shhs/polysomnography/edfs/shhs1/'
         unavailable_eeg_indeces = []
         for i, nsrrid in enumerate(df["nsrrid"]):
-            edf_path = edfs_dir + "shhs1-" + str(nsrrid) + ".edf"
+            edf_path = edfs_dir / f"shhs1-{nsrrid}.edf"
             if np.logical_not(os.path.isfile(edf_path)):
                 unavailable_eeg_indeces.append(i)
                 print(f"EEG not available for nsrrid {nsrrid}.")
@@ -103,8 +112,8 @@ class SHHSPreprocessor:
     # Creates the mne.io.Raw object for one nsrrid.
     @staticmethod
     def load_raw_eeg(self, nsrrid):
-        edfs_dir = 'data/Raw/shhs/polysomnography/edfs/shhs1/'
-        patient_path = edfs_dir+"shhs1-"+str(nsrrid)+".edf"
+        edfs_dir = self.root_dir / 'data/Raw/shhs/polysomnography/edfs/shhs1/'
+        patient_path = edfs_dir / f"shhs1-{nsrrid}.edf"
         channel = [self.params["channel"]]
         raw_eeg = mne.io.read_raw_edf(patient_path, include=channel)
         return raw_eeg
@@ -117,7 +126,7 @@ class SHHSPreprocessor:
         n_epochs = total_duration // 30 + 1  # +1 because the last epoch is less than 30s, but we want to include it
         labels = [None] * int(n_epochs)
         # Create path string for current patient.
-        annotations_path = f"data/Raw/shhs/polysomnography/annotations-events-nsrr/shhs1/shhs1-{nsrrid}-nsrr.xml"
+        annotations_path = self.root_dir / f"data/Raw/shhs/polysomnography/annotations-events-nsrr/shhs1/shhs1-{nsrrid}-nsrr.xml"
         # Check the annotations file is available for this patient.
         if os.path.isfile(annotations_path):
             annotations = ET.parse(annotations_path)
@@ -264,27 +273,95 @@ class SHHSPreprocessor:
         # print(np.sum(normalised_features ** 2, axis=2)) # Check that total energy of features in each epoch = 1
         return feature_freqs, normalised_features
 
+    def get_power_fractions(self, freqs, fft_data, lpf_epochs):
+        labels = lpf_epochs.metadata["Sleep Stage"]
+        # Epoch indices for corresponding stages N3 N2/N1 REM W
+        stage_idx = np.zeros((4, len(labels)))
+        for i in range(4):
+            stage_idx[i] = labels == i
+        # Frequency range indices for corresponding clinical bands
+        delta_idx = np.logical_and(np.greater_equal(freqs, 0.5), np.less(freqs, 4))
+        theta_idx = np.logical_and(np.greater_equal(freqs, 4), np.less(freqs, 8))
+        alpha_idx = np.logical_and(np.greater_equal(freqs, 8), np.less(freqs, 12))
+        beta_idx = np.logical_and(np.greater_equal(freqs, 12), np.less(freqs, 30))
+        # Power fractions for each window
+        # Delta, theta, alpha, beta
+        delta_fft = fft_data * delta_idx  # Shape (n_windows, n_channels, n_freqs), zeros outside the desired frequency range
+        theta_fft = fft_data * theta_idx
+        alpha_fft = fft_data * alpha_idx
+        beta_fft = fft_data * beta_idx
+
+        fft = np.squeeze(np.array([delta_fft, theta_fft, alpha_fft, beta_fft]))  # Shape (n_bands, n_epochs, n_freq)
+
+        powers = np.sum(fft * fft, axis=2)  # Total power for each window, shape (n_bands, n_epochs)
+
+        power_fractions = powers / np.sum(powers, axis=0)  # Power fractions for each window, shape (n_bands, n_epochs)
+
+        # Powers for each sleep stage, for each window
+        stage_powers = np.flip(np.expand_dims(powers, 1) * np.expand_dims(stage_idx, 0),
+                               axis=1)  # Shape (n_bands (4), n_stages (4), n_windows)
+        # axis0: bands delta->beta
+        # axis1: stages W->N3
+
+        # Average powers for each sleep stage
+        avg_stage_powers = np.average(stage_powers,
+                                      axis=2)  # Averaged over windows corresponding to each sleep stage. Shape (n_bands, n_stages)
+        avg_stage_power_fractions = avg_stage_powers / np.sum(avg_stage_powers, axis=0)
+
+        return avg_stage_power_fractions, power_fractions
+
+    def plot_power_fractions(self, avg_stage_power_fractions):
+        # Assuming your avg_power_fractions looks something like this:
+        # avg_power_fractions = np.array([[0.1, 0.15, 0.12, 0.18], # Wake delta->beta
+        #                                [0.2, 0.25, 0.22, 0.28],
+        #                                [0.3, 0.35, 0.32, 0.38],
+        #                                [0.4, 0.45, 0.42, 0.48]]) #N3 delta->beta
+
+        # Bands and stages
+        bands = ["Delta", "Theta", "Alpha", "Beta"]
+        barstages = ["W", "REM", "N1/N2", "N3"]
+
+        # Creating the stacked bar plot
+        bar_width = 0.6
+        x = np.arange(len(barstages))
+
+        bottoms = np.zeros(len(barstages))
+
+        for i in range(len(bands)):
+            plt.bar(x, avg_stage_power_fractions[i], bar_width, label=bands[i], bottom=bottoms,
+                    color=['midnightblue', 'magenta', 'orangered', 'lawngreen'][i])
+            bottoms += avg_stage_power_fractions[i]
+
+        plt.xlabel('Sleep Stage')
+        plt.ylabel('Average Power Fraction')
+        plt.title('EEG Example Average Power Distribution')
+        plt.xticks(x, barstages)
+        plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+        plt.tight_layout()
+
+        plt.show()
+
     # Save frequency features and labels to csv
-    def save_f_features_labels_csv(self, nsrrid, features, epochs):  # Saves features and labels (where experts agree) to csv.
+    def save_f_features_labels(self, nsrrid, features, epochs):
         # Find the directory to save data to
-        data_dir = get_data_dir_shhs(data_type="f", art_rejection=self.params["art_rejection"], filtering=self.params["lpf"],
-                                    prec_epochs=0, foll_epochs=0)
-        # Check data_dir is a directory and make one if not
-        if np.logical_not(os.path.isdir(data_dir)):
+        data_dir = get_data_dir_shhs(data_type="f", art_rejection=self.params["art_rejection"],
+                                     filtering=self.params["lpf"],
+                                     prec_epochs=0, foll_epochs=0)
+        # Ensure the directory exists
+        if not os.path.isdir(data_dir):
             os.makedirs(data_dir)
-        # Find the examples that has a label (Boolean Indexing)
+        # Find the examples that have a label (Boolean Indexing)
         label_bool_idx = np.logical_not(epochs.metadata["Sleep Stage"].isna())
-        # Select the features for the examples where the two experts agree, using boolean indexing.
+        # Select the features and labels where the two experts agree, using boolean indexing.
         selected_features = features[label_bool_idx, :, :]
-        # Select the labels for the same examples
         selected_labels = np.array(epochs.metadata["Sleep Stage"])[label_bool_idx]
-        # Construct a dataframe containing the features and labels
-        dataframe_columns = [str(feature_no) for feature_no in range(1, 1 + self.params["n_features"])] + ["Label"]
-        data = np.concatenate((np.squeeze(selected_features), np.expand_dims(selected_labels, 1)), axis=1)
-        df = pd.DataFrame(data, columns=dataframe_columns)
-        # Write the dataframe to csv
-        # SHHSConfig_f is dependent on this filename format - be careful changing it.
-        df.to_csv(data_dir / f"nsrrid_{nsrrid}.csv")
+        # Reshape features to be 2D (examples by features)
+        selected_features = selected_features.reshape(selected_features.shape[0], -1)
+        # Concatenate features and labels into a single array, with labels as the last column
+        data = np.hstack((selected_features, selected_labels[:, np.newaxis]))
+        # Save the numpy array
+        file_path = data_dir / f"nsrrid_{nsrrid}.npy"
+        np.save(file_path, data)
         return
 
     # Save time domain features and labels to npy
@@ -332,3 +409,4 @@ class SHHSPreprocessor:
 if __name__ == "__main__":
 
     pre = SHHSPreprocessor()
+    pre.process_f()
