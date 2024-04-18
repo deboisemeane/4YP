@@ -45,8 +45,7 @@ class KFoldConfig(DataConfig):
         # Generate the splits
         self.all_nsrrids = all_nsrrids
         self.splits = []
-        print(f"Data_dir: {data_dir}")
-        print(f"all_nsrrids: {all_nsrrids}")
+
         np.random.shuffle(self.all_nsrrids)  # Shuffle the data to ensure randomness
 
         segment_length = len(self.all_nsrrids) // k
