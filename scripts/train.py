@@ -191,7 +191,11 @@ class Train:
 
         # Initialise best_val_loss which we will use to save the best model state
         best_val_loss = 100000000000
-
+        # Pre-training loss
+        val_loss, val_accuracy = calculate_ce_loss(self.model, criterion, self.val_loader, self.device)
+        VL.append(val_loss)
+        train_loss, train_accuracy = calculate_ce_loss(self.model, criterion, self.train_loader, self.device)
+        TL.append(train_loss)
         # Training loop
         for epoch in range(n_epochs):  # Loops over the entire training set
 
