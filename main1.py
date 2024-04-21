@@ -4,6 +4,7 @@ from src.models import MLP1, Sors, Sors7, Sors_nocontext1, Sors_nocontext2, Sors
 from debug import AFNet
 import matplotlib.pyplot as plt
 from utils import Timer
+import numpy as np
 
 
 def main():
@@ -18,7 +19,7 @@ def main():
     #split = {"train": 350, "val": 100, "test": 50}
     #resample = {"2": 2.84}
 
-    data_config = SHHSConfig(split=split, data_type="ecg_rip", art_rejection=True, filtering=True, resample=None,
+    data_config = SHHSConfig(split=split, data_type="rip_hr", art_rejection=True, filtering=True, resample=None,
                              prec_epochs=2, foll_epochs=1)
     optimiser_config = AdamConfig(lr=0.00003)
 
@@ -26,7 +27,7 @@ def main():
 
     timer = Timer()
     timer.start()
-    trainer.train(n_epochs=7, print_losses=True, weight_losses=True)
+    trainer.train(n_epochs=12, print_losses=True, weight_losses=True, weight_scalings=np.array([1, 1.5, 1, 1]))
     time_train = timer.stop()
     print(f"Total training time: {time_train}")
 
