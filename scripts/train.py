@@ -176,7 +176,8 @@ class Train:
         # Set criterion weight based on inverse of class sizes in the training data.
         if weight_scalings is None:
             weight_scalings = 1
-        weight = (self.train_dataset.weight * weight_scalings).to(self.device) if weight_losses is True else None
+        weight = torch.tensor(self.train_dataset.weight * weight_scalings, dtype=torch.float32).to(self.device) if weight_losses is True else None
+
         print(f"Class counts in training data: {self.train_dataset.label_counts}")
         if weight_losses is True:
             print(f"Weighting loss: {weight}")
