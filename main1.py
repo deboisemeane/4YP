@@ -1,6 +1,6 @@
 import torch
 from scripts import Train, AdamConfig, SHHSConfig
-from src.models import MLP1, Sors, Sors7, Sors_nocontext1, Sors_nocontext2, Sors_largekernels
+from src.models import MLP1, Sors, Sors7, Sors_nocontext1, Sors_nocontext2, Sors_largekernels, Sors_rip_hr
 from debug import AFNet
 import matplotlib.pyplot as plt
 from utils import Timer
@@ -23,7 +23,7 @@ def main():
                              prec_epochs=2, foll_epochs=1)
     optimiser_config = AdamConfig(lr=0.00003)
 
-    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors, device=device)
+    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors_rip_hr, device=device)
 
     timer = Timer()
     timer.start()
