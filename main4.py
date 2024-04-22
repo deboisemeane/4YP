@@ -26,7 +26,7 @@ def main():
     kfoldcv = KFold_CV(data_config, optimiser_config, device, Sors_rip_hr)
     timer = Timer()
     timer.start()
-    kfoldcv.cross_validate(n_epochs=9, print_losses=True, weight_losses=True, weight_scalings=torch.tensor([1, 1.4, 1, 1]))
+    kfoldcv.cross_validate(n_epochs=7, print_losses=True, weight_losses=True, weight_scalings=torch.tensor([1, 1.4, 1, 1]))
     time_train = timer.stop()
     print(f"Total training time: {time_train}")
 
