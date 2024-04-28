@@ -14,20 +14,20 @@ def main():
 
     # Training the MLP on SHHS data
     #split = {"train": 15, "val": 10, "test": 2}
-    #split = {"train": 1950, "val": 557, "test": 278}
-    split = {"train": 1926, "val": 550, "test": 275}
+    split = {"train": 1950, "val": 557, "test": 278}  # EEG
+    #split = {"train": 1926, "val": 550, "test": 275}  # Cardiorespiratory
     #split = {"train": 350, "val": 100, "test": 50}
     #resample = {"2": 2.84}
 
-    data_config = SHHSConfig(split=split, data_type="rip_hr", art_rejection=True, filtering=True, resample=None,
+    data_config = SHHSConfig(split=split, data_type="f", art_rejection=True, filtering=True, resample=None,
                              prec_epochs=2, foll_epochs=1)
     optimiser_config = AdamConfig(lr=0.00003)
 
-    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=Sors_rip_hr, device=device)
+    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=MLP1, device=device)
 
     timer = Timer()
     timer.start()
-    trainer.train(n_epochs=12, print_losses=True, weight_losses=True, weight_scalings=np.array([1, 1.5, 1, 1]))
+    trainer.train(n_epochs=12, print_losses=True, weight_losses=True, weight_scalings=np.array([1, 1, 1, 1]))
     time_train = timer.stop()
     print(f"Total training time: {time_train}")
 
