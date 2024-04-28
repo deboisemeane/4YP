@@ -5,11 +5,12 @@ import torch
 import numpy as np
 from pathlib import Path
 import csv
+from torch.utils.data import Dataset
 
 
 # Custom dataset for time series data.
 # Due to memory constraints, this class reads training examples from disk individually.
-class SHHSDataset_t:
+class SHHSDataset_t(Dataset):
 
     def __init__(self, nsrrids: list[int], data_dir: str, resample=None):
         self.nsrrids = nsrrids
