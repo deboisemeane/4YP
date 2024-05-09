@@ -29,11 +29,15 @@ def predict_hypnogram(model, nsrrid, data_type, art_rejection=True, filtering=Tr
 
 if __name__ == "__main__":
     fs = 12
-    labels, predictions = predict_hypnogram(Sors_rip_hr, 200029, "rip_hr")
-    fig, ax = plt.subplots(2, 1, sharex=True)
+    nsrrid = 201463  # 201979, 201463
+    labels, predictions = predict_hypnogram(Sors, nsrrid, "t")
+    fig, ax = plt.subplots(3, 1, sharex=True)
+    fig.set_size_inches(12,4)
     ax[0].plot(np.arange(len(labels)) / 120, labels, color="k",)
     ax[1].plot(np.arange(len(labels)) / 120, predictions, color='dodgerblue')
-    ax[1].set_xlabel("Time (hrs)", fontsize=fs)
+    labels, predictions = predict_hypnogram(Sors_rip_hr, nsrrid, "rip_hr")
+    ax[2].plot(np.arange(len(labels)) / 120, predictions, color='red')
+    ax[2].set_xlabel("Time (hrs)", fontsize=fs)
 
     for ax in ax:
         yticklabels = ['N3', 'N1/N2', 'REM', 'W']
@@ -41,8 +45,10 @@ if __name__ == "__main__":
         ax.set_yticks(yticks)
         ax.set_yticklabels(yticklabels)
 
-    fig.text(0.05, 0.5, 'Sleep Stage', va='center', rotation='vertical', fontsize=fs)
-    fig.text(0.93, 0.27, 'Predicted', va='center', rotation=270, fontsize=fs)
-    fig.text(0.93, 0.70, 'Target', va='center', rotation=270, fontsize=fs)
+    fig.text(0.04, 0.5, 'Sleep Stage', va='center', rotation='vertical', fontsize=fs)
+    fig.text(0.93, 0.5, '    EEG\nACC: 0.89', va='center', rotation=270, fontsize=fs)
+    fig.text(0.93, 0.77, 'Target', va='center', rotation=270, fontsize=fs)
+    fig.text(0.93, 0.22, '  RIP, HR\nACC: 0.68', va='center', rotation=270, fontsize=fs)
+    fig.suptitle("Male, 75", x=0.5, y=0.95)
     plt.show()
 
