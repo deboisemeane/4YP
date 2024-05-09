@@ -33,8 +33,9 @@ def plot_norm_confusion(confusion, title, cmap='viridis'):
 
 
 if __name__ == '__main__':
-    confusion = np.array([[10844, 25921,   778,  2722],
- [10006, 84583,  7725, 17311],
- [  245, 11014, 27828,  2792],
- [  583,  8381,  1302, 55663]])
-    plot_norm_confusion(confusion, "", cmap="plasma")
+    confusion = np.array([[37179,  4550,   487,   593,],
+ [22932, 67064, 21673,  8357,],
+ [ 1086,  7270, 27912,  5436,],
+ [ 2290,  5230,  9067, 61868,]])
+
+    plot_norm_confusion(confusion, "Row-Normalised Confusion Matrix", cmap="plasma")
