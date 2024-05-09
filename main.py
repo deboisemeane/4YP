@@ -1,9 +1,10 @@
 import torch
-from scripts import Train, AdamConfig, SHHSConfig
+from scripts import Train, AdamConfig, SHHSConfig, KFoldConfig, KFold_CV
 from src.models import MLP1, Sors, Sors7, Sors_nocontext1, Sors_nocontext2
 from debug import AFNet
 import matplotlib.pyplot as plt
 from utils import Timer
+import numpy as np
 
 
 def main():
@@ -18,27 +19,24 @@ def main():
     #split = {"train": 350, "val": 100, "test": 50}
     #resample = {"2": 2.84}
 
-    data_config = SHHSConfig(split=split, data_type="t", art_rejection=True, filtering=True, resample=None,
+    data_config = KFoldConfig(k=5, split=split, data_type="t", art_rejection=True, filtering=True, resample=None,
                              prec_epochs=2, foll_epochs=1)
     optimiser_config = AdamConfig(lr=0.0003)
 
-    trainer = Train(data_config=data_config, optimiser_config=optimiser_config, model=AFNet, device=device)
 
-    timer = Timer()
-    timer.start()
-    trainer.train(n_epochs=12, print_losses=True, weight_losses=False)
-    time_train = timer.stop()
-    print(f"Total training time: {time_train}")
+    kfoldcv = KFold_CV(data_config=data_config, optimiser_config=AdamConfig(lr=0.0003), device=device, model=Sors)
 
-    # Testing
-    trainer.test()
+    # Generate random loss data for testing the plot
+    # Assuming there are 5 folds (k=5) and 12 epochs
 
-    # Plotting loss for training with SHHS
-    fig, ax = plt.subplots()
-    ax.set_title("EEG Experiment 1")
-    labels = {"t": "Training", "v": "Validation"}
-    trainer.plot_loss(ax=ax, labels=labels)
-    plt.savefig(f'figures/eeg_experiment_1_{split["train"]}-{split["val"]}-{split["test"]}.png')
+    num_folds = 5
+    num_epochs = 12
+
+    # Random training and validation losses for each fold and each epoch
+    # Generating losses between 0.0 and 1.0 as an example
+    kfoldcv.TLs = [np.random.rand(num_epochs) for _ in range(num_folds)]
+    kfoldcv.VLs = [np.random.rand(num_epochs) for _ in range(num_folds)]
+    kfoldcv.plot_loss("figures/5foldcv_t.png", title="5-Fold Cross Validation Loss Plot, Sors EEG")
 
 
 if __name__ == '__main__':
